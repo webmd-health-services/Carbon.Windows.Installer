@@ -1,0 +1,83 @@
+
+PublishOn:
+- main
+- prerelease
+
+Build:
+- Version:
+    Path: Carbon.Windows.Installer\Carbon.Windows.Installer.psd1
+
+# Dot-sourcing files is expensive. Move all functions into .psm1 file to improve import speed. Do this before testing
+# to ensure the module still works.
+- MergeFile:
+    OnlyBy: BuildServer
+    # Builds run twice on some serves. Only run this step if the module hasn't been merged yet.
+    IfExists: Carbon.Windows.Installer\Functions\*.ps1
+    Path:
+    - Carbon.Windows.Installer\Functions\*.ps1
+    DestinationPath: Carbon.Windows.Installer\Carbon.Windows.Installer.psm1
+    DeleteSourceFiles: true
+    TextSeparator: "$(NewLine)$(NewLine)"
+
+- CopyFile:
+    IfExists: env:WHS_CI
+    Path:
+    - LICENSE
+    - NOTICE
+    DestinationDirectory: Carbon.Windows.Installer
+
+- PowerShell:
+    ExceptDuring: Clean
+    Path: init.ps1
+
+- PowerShell:
+    OnlyDuring: Clean
+    Path: reset.ps1
+
+- Pester4:
+    Script: Tests\*.Tests.ps1
+
+# Build runs twice on some servers, so delete any ZIP file created by another build.
+- Delete:
+    Path: .output\*.zip
+
+- Zip:
+    ArchivePath: .output\Carbon.Windows.Installer.zip
+    Path: 
+    - Carbon.Windows.Installer
+
+Publish:
+
+- AppVeyorWaitForBuildJobs:
+    IfExists: env:PUBLISH
+    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
+    ApiKeyID: AppVeyorBearerToken
+
+- PublishPowerShellModule:
+    IfExists: env:PUBLISH
+    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
+    RepositoryName: PSGallery
+    RepositoryUri: https://powershellgallery.com/api/v2/
+    Path: Carbon.Windows.Installer
+    ApiKeyID: PowerShellGalleryApiKey
+
+- SetVariableFromPowerShellDataFile:
+    Path: Carbon.Windows.Installer\Carbon.Windows.Installer.psd1
+    Variables:
+        PrivateData:
+            PSData:
+                ReleaseNotes: RELEASE_NOTES
+
+- GitHubRelease:
+    IfExists: env:PUBLISH
+    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
+    RepositoryName: webmd-health-services/Carbon.Windows.Installer
+    ApiKeyID: GitHubAccessToken
+    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
+    Commitish: $(WHISKEY_SCM_COMMIT_ID)
+    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
+    Description: $(RELEASE_NOTES)
+    Assets:
+    - Path: .output\Carbon.Windows.Installer.zip
+      ContentType: application/zip
+      Name: Carbon.Windows.Installer-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip
