@@ -18,7 +18,7 @@
     RootModule = 'Carbon.Windows.Installer.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.0.0'
+    ModuleVersion = '1.0.0'
 
     # ID used to uniquely identify this module
     GUID = ''
@@ -69,13 +69,19 @@
     # TypesToProcess = @()
 
     # Format files (.ps1xml) to be loaded when importing this module
-    # FormatsToProcess = @( )
+    FormatsToProcess = @(
+        'Formats\MsiInfo.ps1xml',
+        'Formats\ProgramInfo.ps1xml'
+    )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
     # NestedModules = @()
 
     # Functions to export from this module. Only list public function here.
     FunctionsToExport = @(
+        'Get-Msi',
+        'Get-InstalledProgram',
+        'Install-Msi'
     )
 
     # Cmdlets to export from this module. By default, you get a script module, so there are no cmdlets.
@@ -95,6 +101,12 @@
 
     # List of all files packaged with this module
     # FileList = @()
+
+    # HelpInfo URI of this module
+    # HelpInfoURI = ''
+
+    # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
+    DefaultCommandPrefix = 'C'
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
     PrivateData = @{
@@ -121,10 +133,4 @@
         } # End of PSData hashtable
 
     } # End of PrivateData hashtable
-
-    # HelpInfo URI of this module
-    # HelpInfoURI = ''
-
-    # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-    # DefaultCommandPrefix = ''
 }

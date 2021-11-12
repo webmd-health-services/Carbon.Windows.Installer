@@ -5,35 +5,31 @@ skip_tags: true
 skip_branch_with_pr: true
 
 image: 
+- Visual Studio 2013
 - Visual Studio 2015
 - Visual Studio 2017
 - Visual Studio 2019
-- Ubuntu
-- macOS
+- Visual Studio 2022
 
 build:
   verbosity: minimal
 
 build_script:
+- ps: $env:PUBLISH = 'False' ; .\build.ps1
 - pwsh: .\build.ps1
 
 for:
 - matrix:
     only:
+      - image: Visual Studio 2013
+      # These run PowerShell Core 6, which doesn't support COM.
       - image: Visual Studio 2015
       - image: Visual Studio 2017
   build_script:
   - ps: .\build.ps1
-  - pwsh: .\build.ps1
 
 - matrix:
     only:
-      - image: Ubuntu
-  environment:
-    LANG: us_US.UTF-8
-
-- matrix:
-    only:
-    - image: Visual Studio 2019
+    - image: Visual Studio 2022
   environment:
     PUBLISH: True

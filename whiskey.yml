@@ -7,6 +7,16 @@ Build:
 - Version:
     Path: Carbon.Windows.Installer\Carbon.Windows.Installer.psd1
 
+- GetPowerShellModule:
+    Name: VSSetup
+    Version: 2.*
+    
+- PowerShell:
+    OnlyDuring: Build
+    Path: Source\Compile-CarbonTestInstaller.ps1
+    Argument:
+        Configuration: $(WHISKEY_MSBUILD_CONFIGURATION)
+
 # Dot-sourcing files is expensive. Move all functions into .psm1 file to improve import speed. Do this before testing
 # to ensure the module still works.
 - MergeFile:
@@ -24,6 +34,8 @@ Build:
     Path:
     - LICENSE
     - NOTICE
+    - README.md
+    - CHANGELOG.md
     DestinationDirectory: Carbon.Windows.Installer
 
 - PowerShell:
@@ -61,13 +73,6 @@ Publish:
     Path: Carbon.Windows.Installer
     ApiKeyID: PowerShellGalleryApiKey
 
-- SetVariableFromPowerShellDataFile:
-    Path: Carbon.Windows.Installer\Carbon.Windows.Installer.psd1
-    Variables:
-        PrivateData:
-            PSData:
-                ReleaseNotes: RELEASE_NOTES
-
 - GitHubRelease:
     IfExists: env:PUBLISH
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
@@ -76,7 +81,7 @@ Publish:
     Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
     Commitish: $(WHISKEY_SCM_COMMIT_ID)
     Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Description: $(RELEASE_NOTES)
+    Description: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
     Assets:
     - Path: .output\Carbon.Windows.Installer.zip
       ContentType: application/zip
