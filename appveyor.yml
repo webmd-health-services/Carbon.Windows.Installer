@@ -4,12 +4,18 @@ skip_tags: true
 
 skip_branch_with_pr: true
 
-image: 
-- Visual Studio 2013
+image:
+# - Visual Studio 2013
 - Visual Studio 2015
 - Visual Studio 2017
 - Visual Studio 2019
 - Visual Studio 2022
+- Ubuntu # Ubuntu and Ubuntu1804 are the same
+- Ubuntu2004
+- Ubuntu1604
+- macOS
+- macOS-BigSur
+- macOS-Mojave
 
 build:
   verbosity: minimal
