@@ -38,7 +38,7 @@ param(
 )
 
 #Requires -Version 5.1
-# $ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 
 Set-StrictMode -Version Latest
 
@@ -125,12 +125,6 @@ if( -not (Test-Path -Path $whiskeyModuleRoot -PathType Container) )
     Remove-Item -Path $zipFilePath
 }
 
-# Whiskey assembly doesn't load by default on Windows Server 2012 R2.
-
-$Global:Error.Clear()
-Add-Type -Path (Join-Path -Path $whiskeyModuleRoot -ChildPath "$($moduleDirName)\bin\Whiskey.dll" -Resolve)
-$Global:Error | Format-List -Property '*' -Force
-$Global:Error | Select-Object -ExpandProperty 'Exception' | Format-List -Property '*' -Force
 & {
     $VerbosePreference = 'SilentlyContinue'
     Import-Module -Name $whiskeyModuleRoot -Force
