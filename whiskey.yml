@@ -1,11 +1,15 @@
 
-PublishOn:
-- main
-- prerelease
-
 Build:
 - Version:
     Path: Carbon.Windows.Installer\Carbon.Windows.Installer.psd1
+    Prerelease:
+    - "*/*": alpha$(WHISKEY_BUILD_NUMBER)
+    - develop: rc$(WHISKEY_BUILD_NUMBER)
+
+- Exec:
+      OnlyBy: BuildServer
+      Path: appveyor
+      Argument: [ UpdateBuild, -Version, $(WHISKEY_SEMVER2) ]
 
 - GetPowerShellModule:
     Name: VSSetup
@@ -46,43 +50,28 @@ Build:
     OnlyDuring: Clean
     Path: reset.ps1
 
-- Pester4:
-    Script: Tests\*.Tests.ps1
-
-# Build runs twice on some servers, so delete any ZIP file created by another build.
-- Delete:
-    Path: .output\*.zip
-
 - Zip:
-    ArchivePath: .output\Carbon.Windows.Installer.zip
+    ArchivePath: .output\Carbon.Windows.Installer-$(WHISKEY_SEMVER2).zip
     Path: 
     - Carbon.Windows.Installer
 
-Publish:
-
-- AppVeyorWaitForBuildJobs:
-    IfExists: env:PUBLISH
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    ApiKeyID: AppVeyorBearerToken
+- Exec:
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [ 'PushArtifact', '.output/Carbon.Windows.Installer-$(WHISKEY_SEMVER2).zip', '-DeploymentName', 'GitHub' ]
 
 - PublishPowerShellModule:
-    IfExists: env:PUBLISH
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    RepositoryName: PSGallery
-    RepositoryUri: https://powershellgallery.com/api/v2/
     Path: Carbon.Windows.Installer
-    ApiKeyID: PowerShellGalleryApiKey
 
-- GitHubRelease:
-    IfExists: env:PUBLISH
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    RepositoryName: webmd-health-services/Carbon.Windows.Installer
-    ApiKeyID: GitHubAccessToken
-    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Commitish: $(WHISKEY_SCM_COMMIT_ID)
-    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Description: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Assets:
-    - Path: .output\Carbon.Windows.Installer.zip
-      ContentType: application/zip
-      Name: Carbon.Windows.Installer-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip
+- Exec:
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [
+        'PushArtifact',
+        '.output/Carbon.Windows.Installer.$(WHISKEY_SEMVER2_NO_BUILD_METADATA).nupkg',
+        '-DeploymentName',
+        'PowerShellGallery'
+    ]
+
+- Pester4:
+    Script: Tests\*.Tests.ps1
