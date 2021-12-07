@@ -52,7 +52,7 @@ if( -not (Get-Command -Name 'devenv' -ErrorAction Ignore) )
     if( -not $instance )
     {
         $instance = 
-            @('14', '12', '11', '10', '9' ) |
+            @('14', '12', '11', '10', '9', '8' ) |
             ForEach-Object { "env:VS$($_)0COMNTOOLS" } |
             Where-Object { Test-Path -Path $_ } |
             ForEach-Object { Get-Item -Path $_ } |
