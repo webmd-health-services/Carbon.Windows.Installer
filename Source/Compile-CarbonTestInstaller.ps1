@@ -94,17 +94,27 @@ Write-Verbose ('devenv "{0}" /build "{1}"' -f $installerSlnPath,$Configuration)
 if( (Test-Path -Path 'env:APPVEYOR_BUILD_WORKER_IMAGE') -and `
     ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq 'Visual Studio 2013') )
 {
-    Push-Location -Path $idePath
-    try
-    {
-        Write-Verbose "IdePath  $($idePath)" -Verbose
-        Get-ChildItem -Recurse
-        # & '.\CommonExtensions\Microsoft\VSI\DisableOutOfProcBuild\DisableOutOfProcBuild.exe'
-    }
-    finally
-    {
-        Pop-Location
-    }
+    $vsKeyPath = 'HKCU:\SOFTWARE\Microsoft\VisualStudio\'
+    Get-ChildItem -Path $vsKeyPath |
+        Where-Object 'PSChildName' -match '^\d+\.\d+' |
+        Where-Object 'PSChildName' -notlike '*_config' |
+        ForEach-Object {
+            $configKeyPath = Join-Path -Path $vsKeyPath -ChildPath "$($_.PSChildName)_Config"
+            if( (Test-Path -Path $configKeyPath) )
+            {
+               return Get-Item -Path $configKeyPath
+            }
+            return New-Item -Path $configKeyPath -ItemType 'RegistryKey'
+        } |
+        ForEach-Object {
+            $msbuildKeyPath = Join-Path -Path $_.PSPath -ChildPath 'MSBuild'
+            if( $_.GetSubKeyNames() -contains 'MSBuild' )
+            {
+                return Get-Item -Path $msbuildKeyPath
+            }
+            return New-Item -Path $msbuildKeyPath -ItemType 'RegistryKey'
+        } |
+        Set-ItemProperty -Name 'EnableOutOfProcBuild' -Value 0 -PassThru
 }
 
 devenv $installerSlnPath /build $Configuration
