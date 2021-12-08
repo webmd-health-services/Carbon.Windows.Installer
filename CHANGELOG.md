@@ -1,13 +1,16 @@
 
 # 1.0.0
 
-## Upgrade Instructions
+The `Carbon.Windows.Installer` module was created from functions in the `Carbon` module. These release notes assume
+you're migrating from `Carbon`. If you're not migrating, you can ignore these release notes.
+
+## Migration Instructions
 
 If migrating from Carbon, you'll need to make the following changes:
 
 ### General
 
-* `Carbon.Windows.Installer` requires PowerShell 5.1 or later.
+* `Carbon.Windows.Installer` requires Windows PowerShell 5.1 or PowerShell 6.2+ on Windows.
 
 ### Get-CMsi
 
@@ -15,47 +18,50 @@ If migrating from Carbon, you'll need to make the following changes:
 * Rename `Properties` property usages to `Property` on objects returned from `Get-CMsi`. The `Properties` property on
   objects returned from `Get-CMsi` was renamed to `Property`.
 * Change property lookups on the objects returned from `Get-CMsi` from `$msiInfo.Properties[KEY]` to
-  `$msiInfo.GetPropertyValue(KEY)`. The `Properties` property is now an array of
+  `$msiInfo.GetPropertyValue(KEY)`. The `Properties` property is now named `Property` and is an array of
   `Carbon.Windows.Installer.Records.Property` objects (instead of a hashtable) and we added a `GetPropertyValue` method
   to lookup specific property values.
-* Remove usages of the `[Carbon.Msi.MsiInfo]` type. It was removed. `Get-CMsi` now returns `[PSObject]` objects with 
-  pstypename `[Carbon.Windows.Installer.MsiInfo]`.
+* Remove usages of the `[Carbon.Msi.MsiInfo]` type. It was removed. `Get-CMsi` now returns `[PSObject]` objects with a
+  pstypename of `[Carbon.Windows.Installer.MsiInfo]`.
 
 ### Get-CProgramInstallInfo
 
 * Rename usages of `Get-CProgramInstallInfo` to `Get-CInstalledProgram`. We renamed `Get-CProgramInstallInfo` to 
   `Get-CInstalledProgram`. The `C` prefix is now required.
 * Remove usages of the `[Carbon.Computer.ProgramInstallInfo]`. `Get-CInstalledProgram` now returns `[PSObject]` objects
-  with pstypename `[Carbon.Windows.Installer.ProgramInfo]`.
+  with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
 
 ### Install-CMsi
 
 * Remove usages of the `-Quiet` switch. The `-Quiet` parameter was removed.
 
-## Changes
+## Release Notes
 
-### General
+### Added
 
-* `Carbon.Windows.Installer` requires PowerShell 5.1 or later.
-* You can now change the default `C` prefix when importing `Carbon.Windows.Installer`.
+* You can now change the default `C` prefix when importing `Carbon.Windows.Installer` with the `Import-Module` cmdlet's
+`-Prefix` parameter.
+* `Get-CMsi`: returned objects now have a `GetPropertyValue([String])` method for getting property values.
 
-### Get-CMsi
+### Changed
 
-* `Get-Msi` backwards-compatible functions removed. You must now use `Get-CMsi`.
-* The `Properties` property renamed to `Property` on objects returned from `Get-CMsi`.
-* The `Properties` property is no longer a hashtable but an array of `[Carbon.Windows.Installer.Records.Property]` 
-  objects. To find an the property value of an installer, use the `GetPropertyValue([String])` method on the object returned by `Get-CMsi`
-* Removed the `[Carbon.Msi.MsiInfo]` .NET object. `Get-CMsi` now returns `[PSObject]` objects with pstypename
-  `[Carbon.Windows.Installer.MsiInfo]`.
-
-### Get-CInstalledProgram (f.k.a Get-CProgramInstallInfo)
-
+* Minimum system requirements are now Windows PowerShell 5.1 on .NET 4.5.2+ or PowerShell 6.2+ on Windows. The
+`Get-CMsi` and `Install-CMsi` functions don't work in PowerShll 6.2.
+* `Get-CMsi`: The `Properties` property on returned objects renamed to `Property`.
+* `Get-CMsi`: The `Properties` property on returned objects is no longer a hashtable but an array of
+`[Carbon.Windows.Installer.Records.Property]` objects. To find the value of a property, use the
+`GetPropertyValue([String])` method.
+* `Get-CMsi` now returns `[PSObject]` objects (instead of `[Carbon.Msi.MsiInfo]` objects) with a pstypename of
+`[Carbon.Windows.Installer.MsiInfo]`.
 * `Get-CProgramInstallInfo` renamed to `Get-CInstalledProgram`.
-* `Get-ProgramInstallInfo` function removed. Use `Get-CInstalledProgram` instead.
 * `Get-CInstalledProgram` no longer writes errors when not running as an administrator.
-* Removed the `[Carbon.Computer.ProgramInstallInfo]` .NET object. `Get-CInstalledProgram` now returns `[PSObject]`
-  objects with pstypename `[Carbon.Windows.Installer.ProgramInfo]`.
+* `Get-CInstalledProgram` now returns `[PSObject]` objects (instead of `[Carbon.Computer.ProgramInstallInfo]` objects)
+with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
 
-### Install-Msi
+## Removed
 
-* `Install-Msi` backwards-compatible function removed. You must now use `Install-CMsi`.
+* `Get-Msi` backward-compatible shim function. Use `Get-CMsi` instead.
+* `Get-ProgramInstallInfo` backward-compatible shim function. Use `Get-CInstalledProgram` instead.
+* `[Carbon.Msi.MsiInfo]` .NET object.
+* `[Carbon.Computer.ProgramInstallInfo]` .NET object.
+* `Install-Msi` backwards-compatible shim function. Use `Install-CMsi` instead.
