@@ -7,6 +7,8 @@
 `Product` and `Feature` tables are returned. The objects returned by `Get-CMsi` now have a `TableNames` property, which
 is the list of all the tables in the MSI's database, and `Tables`, which contains properties for each included table.
 To include a table, pass its name (or a wildcard) to the new `IncludeTable` parameter.
+* When an installer fails, `Install-CMsi` leaves a debug log of the installation in the user's temp directory. The
+file's name begins with the installer's file name followed by a random file name and has a `.log` extension.
 
 
 # 1.0.0

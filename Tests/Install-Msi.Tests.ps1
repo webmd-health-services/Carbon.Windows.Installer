@@ -31,7 +31,7 @@ function Assert-CarbonTestInstallerInstalled
     $tryNum = 0
     do
     {
-        $item = Get-CInstalledProgram -Name 'Carbon Test Installer*'
+        $item = Get-CInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
         if( $item )
         {
             break
@@ -49,7 +49,7 @@ function Assert-CarbonTestInstallerNotInstalled
     $tryNum = 0
     do
     {
-        $item = Get-CInstalledProgram -Name 'Carbon Test Installer*'
+        $item = Get-CInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
         if( -not $item )
         {
             break
@@ -81,7 +81,7 @@ function Uninstall-CarbonTestInstaller
 {
     Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'MSI') -Filter '*.msi' |
         Get-CMsi |
-        Where-Object { Get-CInstalledProgram -Name $_.ProductName } |
+        Where-Object { Get-CInstalledProgram -Name $_.ProductName -ErrorAction Ignore } |
         ForEach-Object {
             #msiexec /fa $_.Path /quiet /l*vx 'D:\restore.log'
             $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/quiet","/fa",('"{0}"' -f $_.Path) -NoNewWindow -Wait -PassThru
@@ -141,6 +141,10 @@ Describe 'Install-Msi.when installer fails' {
     AfterEach { Reset }
     It 'should handle failed installer' -Skip:$isPwsh6 {
         Init
+        $logFilePath = $carbonTestInstallerActionsPath | Split-Path -Leaf
+        $logFilePath = "$($logFilePath).*.*.log"
+        $logFilePath = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $logFilePath
+        Get-Item -Path $logFilePath -ErrorAction Ignore | Remove-Item -Verbose
         $envVarName = 'CARBON_TEST_INSTALLER_THROW_INSTALL_EXCEPTION'
         [Environment]::SetEnvironmentVariable($envVarName, $true.ToString(), 'User')
         try
@@ -152,6 +156,10 @@ Describe 'Install-Msi.when installer fails' {
         {
             [Environment]::SetEnvironmentVariable($envVarName, '', 'User')
         }
+        $logFilePath | Should -Exist
+        $logFilePath | Should -FileContentMatch -ExpectedContent 'msiexec.exe'
+        $logFilePath | Should -FileContentMatch -ExpectedContent 'MSI \(s\)'
+        $logFilePath | Should -FileContentMatch -ExpectedContent '^DEBUG  :'
     }
 }
 
