@@ -33,19 +33,21 @@ function Assert-CarbonMsi
     $msi.Property.Count | Should -BeGreaterThan 5
 }
 
+$isPwsh6 = $PSVersionTable['PSVersion'].Major -eq 6
+
 Describe 'Get-Msi' {
-    It 'should get msi' {
+    It 'should get msi' -Skip:$isPwsh6 {
         $msi = Get-CMsi -Path (Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstaller.msi' -Resolve)
         Assert-CarbonMsi $msi
     }
 
-    It 'should accept pipeline input' {
+    It 'should accept pipeline input' -Skip:$isPwsh6 {
         $msi = Get-ChildItem -Path $msiRootPath -Filter '*.msi' | Get-CMsi
         $msi | Should -Not -BeNullOrEmpty
         $msi | ForEach-Object {  Assert-CarbonMsi $_ }
     }
 
-    It 'should accept array of strings' {
+    It 'should accept array of strings' -Skip:$isPwsh6 {
         $path = Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstaller.msi'
 
         $msi = Get-CMsi -Path @( $path, $path )
@@ -56,7 +58,7 @@ Describe 'Get-Msi' {
         }
     }
 
-    It 'should accept array of file info' {
+    It 'should accept array of file info' -Skip:$isPwsh6 {
         $path = Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstaller.msi'
 
         $item = Get-Item -Path $path
@@ -69,7 +71,7 @@ Describe 'Get-Msi' {
         }
     }
 
-    It 'should support wildcards' {
+    It 'should support wildcards' -Skip:$isPwsh6 {
         $msi = Get-CMsi -Path (Join-Path -Path $msiRootPath -ChildPath '*.msi')
         ,$msi | Should -BeOfType ([object[]])
         foreach( $item in $msi )

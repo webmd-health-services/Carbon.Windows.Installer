@@ -16,7 +16,11 @@ $msiRootPath = Join-Path -Path $PSScriptRoot -ChildPath 'MSI' -Resolve
 $carbonTestInstallerPath = Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstaller.msi' -Resolve
 $carbonTestInstallerActionsPath =
     Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstallerWithCustomActions.msi' -Resolve
-$testInstallerWithActions = Get-CMsi -Path $carbonTestInstallerActionsPath
+$isPwsh6 = $PSVersionTable['PSVersion'].Major -eq 6
+if( -not $isPwsh6 )
+{
+    $testInstallerWithActions = Get-CMsi -Path $carbonTestInstallerActionsPath
+}
 $testRoot = $null
 $testNum = 0
 
@@ -101,9 +105,10 @@ function Uninstall-CarbonTestInstaller
     #     Write-Verbose -Verbose
 }
 
+
 Describe 'Install-Msi.when passed path to a non-MSI file' {
     AfterEach { Reset }
-    It 'should validate file is an MSI' {
+    It 'should validate file is an MSI' -Skip:$isPwsh6 {
         Init
         Install-CMsi -Path $PSCommandPath -ErrorAction SilentlyContinue
         $Global:Error.Count | Should -BeGreaterThan 0
@@ -113,7 +118,7 @@ Describe 'Install-Msi.when passed path to a non-MSI file' {
 
 Describe 'Install-Msi.when using WhatIf' {
     AfterEach { Reset }
-    It 'should support what if' {
+    It 'should support what if' -Skip:$isPwsh6 {
         Init
         Assert-CarbonTestInstallerNotInstalled
         Install-CMsi -Path $carbonTestInstallerPath -WhatIf
@@ -124,7 +129,7 @@ Describe 'Install-Msi.when using WhatIf' {
 
 Describe 'Install-Msi.when installing' {
     AfterEach { Reset }
-    It 'should install msi' {
+    It 'should install msi' -Skip:$isPwsh6 {
         Init
         Assert-CarbonTestInstallerNotInstalled
         Install-CMsi -Path $carbonTestInstallerPath
@@ -134,7 +139,7 @@ Describe 'Install-Msi.when installing' {
 
 Describe 'Install-Msi.when installer fails' {
     AfterEach { Reset }
-    It 'should handle failed installer' {
+    It 'should handle failed installer' -Skip:$isPwsh6 {
         Init
         $envVarName = 'CARBON_TEST_INSTALLER_THROW_INSTALL_EXCEPTION'
         [Environment]::SetEnvironmentVariable($envVarName, $true.ToString(), 'User')
@@ -152,7 +157,7 @@ Describe 'Install-Msi.when installer fails' {
 
 Describe 'Install-Msi.when using wildcards in path to installer' {
     AfterEach { Reset }
-    It 'should support wildcards' {
+    It 'should support wildcards' -Skip:$isPwsh6 {
         Init
         Copy-Item $carbonTestInstallerPath -Destination (Join-Path -Path $script:testRoot -ChildPath 'One.msi')
         Copy-Item $carbonTestInstallerPath -Destination (Join-Path -Path $script:testRoot -ChildPath 'Two.msi')
@@ -163,7 +168,7 @@ Describe 'Install-Msi.when using wildcards in path to installer' {
 
 Describe 'Install-Msi.when product already installed' {
     AfterEach { Reset }
-    It 'should not reinstall if already installed' {
+    It 'should not reinstall if already installed' -Skip:$isPwsh6 {
         Init
         Install-CMsi -Path $carbonTestInstallerActionsPath
         Assert-CarbonTestInstallerInstalled
@@ -188,7 +193,7 @@ Describe 'Install-Msi.when product already installed' {
 
 Describe 'Install-Msi.when forcing product re-installation' {
     AfterEach { Reset }
-    It 'should reinstall if forced to' {
+    It 'should reinstall if forced to' -Skip:$isPwsh6 {
         Init
         Install-CMsi -Path $carbonTestInstallerActionsPath
         Assert-CarbonTestInstallerInstalled
@@ -230,7 +235,7 @@ Describe 'Install-Msi.when forcing product re-installation' {
 
 Describe 'Install-Msi.when there are spaces in the path to the MSI' {
     AfterEach { Reset }
-    It 'should install msi with spaces in path' {
+    It 'should install msi with spaces in path' -Skip:$isPwsh6 {
         Init
         $newInstaller = Join-Path -Path $script:testRoot -ChildPath 'Installer With Spaces.msi'
         Copy-Item -Path $carbonTestInstallerPath -Destination $newInstaller
