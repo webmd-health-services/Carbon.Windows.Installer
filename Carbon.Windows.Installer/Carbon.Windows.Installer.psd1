@@ -52,8 +52,8 @@ code, product version, etc. Let's you inspect an MSI for its metadata without in
 
 System Requirements:
 
-* Windows PowerShell 5.1 on .NET 4.5.2+ or later
-* PowerShell 6+
+* Windows PowerShell 5.1 on .NET 4.5.2+
+* PowerShell 6.2, 7.1, or 7.2
 * Windows Server 2012 R2+ or Windows 8.1+
 '@
 
@@ -90,8 +90,7 @@ System Requirements:
     # Format files (.ps1xml) to be loaded when importing this module
     FormatsToProcess = @(
         'Formats\MsiInfo.ps1xml',
-        'Formats\ProgramInfo.ps1xml',
-        'Formats/Records.Feature.ps1xml'
+        'Formats\ProgramInfo.ps1xml'
     )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
