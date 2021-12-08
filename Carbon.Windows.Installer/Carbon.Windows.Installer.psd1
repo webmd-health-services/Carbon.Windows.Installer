@@ -43,12 +43,14 @@ graphical user interface as objects and text.
 
 Functions include:
 
-* `Get-InstalledProgram`: reads the registry to determine all the programs installed on the local computer. Returns
+* `Get-CInstalledProgram`: reads the registry to determine all the programs installed on the local computer. Returns
 an object for each program. Is an object-based and text-based version of Windows' "Programs and Features"/"Apps and
 Features" GUI.
-* `Get-Msi`: reads an MSI file and returns an object exposing the MSI's internal tables, like product name, product
-code, product version, etc. Let's you inspect an MSI for its metadata without installing it.
-* `Install-Msi`: installs a program from an MSI file, or other file that can be installed by Windows.
+* `Get-CMsi`: reads an MSI file and returns an object exposing the MSI's internal tables, like product name, product
+code, product version, etc. Let's you inspect an MSI for its metadata without installing it. This function requires
+Windows PowerShell or PowerShell 7.1+ on Windows.
+* `Install-CMsi`: installs a program from an MSI file, or other file that can be installed by Windows. This function
+requires Windows PowerShell or PowerShell 7.1+ on Windows.
 
 System Requirements:
 
