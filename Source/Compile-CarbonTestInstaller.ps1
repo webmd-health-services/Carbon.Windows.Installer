@@ -90,6 +90,23 @@ if( -not (Get-Command -Name 'devenv' -ErrorAction Ignore) )
 
 $installerSlnPath = Join-Path -Path $PSScriptRoot -ChildPath 'Carbon.Installer.sln' -Resolve
 Write-Verbose ('devenv "{0}" /build "{1}"' -f $installerSlnPath,$Configuration)
+
+if( (Test-Path -Path 'env:APPVEYOR_BUILD_WORKER_IMAGE') -and `
+    ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq 'Visual Studio 2013') )
+{
+    Push-Location -Path $idePath
+    try
+    {
+        Write-Verbose "IdePath  $($idePath)" -Verbose
+        Get-ChildItem -Recurse
+        # & '.\CommonExtensions\Microsoft\VSI\DisableOutOfProcBuild\DisableOutOfProcBuild.exe'
+    }
+    finally
+    {
+        Pop-Location
+    }
+}
+
 devenv $installerSlnPath /build $Configuration
 if( $LASTEXITCODE )
 {
