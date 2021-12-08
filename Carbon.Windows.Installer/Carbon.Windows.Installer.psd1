@@ -21,7 +21,7 @@
     ModuleVersion = '1.0.0'
 
     # ID used to uniquely identify this module
-    GUID = ''
+    GUID = '57af6e60-d9f5-4523-8aa3-3e3480fd91cc'
 
     # Author of this module
     Author = 'WebMD Health Services'
@@ -36,7 +36,26 @@
     Copyright = '(c) WebMD Health Services.'
 
     # Description of the functionality provided by this module
-    Description = ''
+    Description = @'
+The Carbon.Windows.Installer module is a Windows-only module that has functions for reading and installing Windows MSI
+files/packages, and for replicating Windows' "Programs and Features"/"Apps and Features"
+graphical user interface as objects and text.
+
+Functions include:
+
+* `Get-InstalledProgram`: reads the registry to determine all the programs installed on the local computer. Returns
+an object for each program. Is an object-based and text-based version of Windows' "Programs and Features"/"Apps and
+Features" GUI.
+* `Get-Msi`: reads an MSI file and returns an object exposing the MSI's internal tables, like product name, product
+code, product version, etc. Let's you inspect an MSI for its metadata without installing it.
+* `Install-Msi`: installs a program from an MSI file, or other file that can be installed by Windows.
+
+System Requirements:
+
+* Windows PowerShell 5.1 on .NET 4.5.2+ or later
+* PowerShell 6+
+* Windows Server 2012 R2+ or Windows 8.1+
+'@
 
     # Minimum version of the Windows PowerShell engine required by this module
     PowerShellVersion = '5.1'
@@ -71,7 +90,8 @@
     # Format files (.ps1xml) to be loaded when importing this module
     FormatsToProcess = @(
         'Formats\MsiInfo.ps1xml',
-        'Formats\ProgramInfo.ps1xml'
+        'Formats\ProgramInfo.ps1xml',
+        'Formats/Records.Feature.ps1xml'
     )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
@@ -114,7 +134,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @( 'Desktop', 'Core' )
+            Tags = @( 'Desktop', 'msi', 'package', 'programs', 'features', 'installer' )
 
             # A URL to the license for this module.
             LicenseUri = 'http://www.apache.org/licenses/LICENSE-2.0'
@@ -128,8 +148,8 @@
             Prerelease = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = @'
-'@
+            ReleaseNotes = 'https://github.com/webmd-health-services/Carbon.Windows.Installer/blob/main/CHANGELOG.md'
+
         } # End of PSData hashtable
 
     } # End of PrivateData hashtable
