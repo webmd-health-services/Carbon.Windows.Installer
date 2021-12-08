@@ -104,6 +104,7 @@ function Get-InstalledProgram
         $null = New-PSDrive -Name 'HKU' -PSProvider Registry -Root 'HKEY_USERS' -WhatIf:$false
     }
 
+    $foundPrograms = @()
     & {
             Get-ChildItem -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
             Get-ChildItem -Path 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
@@ -251,7 +252,14 @@ function Get-InstalledProgram
 
             $info.pstypenames.Insert(0, 'Carbon.Windows.Installer.ProgramInfo')
             $info | Write-Output
-        }
+        } |
+        Tee-Object -Variable 'foundPrograms'
+
+    if( $Name -and -not [wildcardpattern]::ContainsWildcardCharacters($Name) -and -not $foundPrograms )
+    {
+        $msg = "Program ""$($Name)"" is not installed."
+        Write-Error -Message $msg -ErrorAction $ErrorActionPreference
+    }
 
     Write-Debug "$($msgPrefix)-"
 }

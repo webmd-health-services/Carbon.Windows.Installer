@@ -15,6 +15,11 @@ Set-StrictMode -Version 'Latest'
 
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Test.ps1' -Resolve)
 
+function Init
+{
+    $Global:Error.Clear()
+}
+
 Describe 'Get-InstalledProgram.when getting all programs' {
     $programs = Get-CInstalledProgram
     It 'should get all installed programs' {
@@ -165,6 +170,22 @@ Describe 'Get-InstalledProgram.when getting a program by name' {
     }
 }
 
+Describe 'Get-InstalledProgram.when program doesn''t exist' {
+    It 'should fail' {
+        Init
+        Get-CInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+        $Global:Error | Should -Match '"CwiFubarSnafu" is not installed'
+    }
+}
+
+Describe 'Get-InstalledProgram.when program doesn''t exist and ignoring errors' {
+    It 'should not fail' {
+        Init
+        Get-CInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction Ignore | Should -BeNullOrEmpty
+        $Global:Error | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Get-InstalledProgram.when getting programs by wildcard' {
 
     $p = Get-CInstalledProgram | Select-Object -First 1
@@ -176,6 +197,14 @@ Describe 'Get-InstalledProgram.when getting programs by wildcard' {
     It 'should find the program' {
         $p2 | Should -Not -BeNullOrEmpty
         Compare-Object -ReferenceObject $p -DifferenceObject $p2 | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Get-InstalledProgram.when getting programs with a wildcard that doesn''t match any program' {
+    It 'should not fail' {
+        Init
+        Get-CInstalledProgram -Name 'CwiFubarSnafu*' | Should -BeNullOrEmpty
+        $Global:Error | Should -BeNullOrEmpty
     }
 }
 

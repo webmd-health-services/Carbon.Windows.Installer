@@ -40,6 +40,8 @@ If migrating from Carbon, you'll need to make the following changes:
   `Get-CInstalledProgram`. The `C` prefix is now required.
 * Remove usages of the `[Carbon.Computer.ProgramInstallInfo]`. `Get-CInstalledProgram` now returns `[PSObject]` objects
   with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
+* Add `-ErrorAction Ignore` or `-ErrorAction SilentlyContinue` to usages of `Get-CInstalledProgram` that are used to
+test if a program exists or not. `Get-CInstalledProgram` now writes an error if a program isn't installed.
 
 ### Install-CMsi
 
@@ -52,6 +54,7 @@ If migrating from Carbon, you'll need to make the following changes:
 * You can now change the default `C` prefix when importing `Carbon.Windows.Installer` with the `Import-Module` cmdlet's
 `-Prefix` parameter.
 * `Get-CMsi`: returned objects now have a `GetPropertyValue([String])` method for getting property values.
+* `Get-CInstalledProgram` (i.e. `Get-CProgramInstallInfo`) now writes an error when a program isn't found.
 
 ### Changed
 
