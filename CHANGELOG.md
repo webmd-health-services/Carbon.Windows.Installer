@@ -1,4 +1,14 @@
 
+# 1.1.0
+
+## Added
+
+* `Get-CMsi` can now read records from *all* of an MSI's internal database tables. By default, only records from the
+`Product` and `Feature` tables are returned. The objects returned by `Get-CMsi` now have a `TableNames` property, which
+is the list of all the tables in the MSI's database, and `Tables`, which contains properties for each included table.
+To include a table, pass its name (or a wildcard) to the new `IncludeTable` parameter.
+
+
 # 1.0.0
 
 The `Carbon.Windows.Installer` module was created from functions in the `Carbon` module. These release notes assume

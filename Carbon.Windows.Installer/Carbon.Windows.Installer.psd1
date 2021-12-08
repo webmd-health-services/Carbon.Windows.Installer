@@ -18,7 +18,7 @@
     RootModule = 'Carbon.Windows.Installer.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '1.1.0'
 
     # ID used to uniquely identify this module
     GUID = '57af6e60-d9f5-4523-8aa3-3e3480fd91cc'
@@ -92,7 +92,8 @@ System Requirements:
     # Format files (.ps1xml) to be loaded when importing this module
     FormatsToProcess = @(
         'Formats\MsiInfo.ps1xml',
-        'Formats\ProgramInfo.ps1xml'
+        'Formats\ProgramInfo.ps1xml',
+        'Formats\Records.Feature.ps1xml'
     )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
@@ -135,7 +136,17 @@ System Requirements:
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @( 'Desktop', 'msi', 'package', 'programs', 'features', 'installer' )
+            Tags = @(
+                'Desktop',
+                'msi',
+                'package',
+                'programs',
+                'features',
+                'installer',
+                'feature',
+                'component',
+                'msiexec'
+            )
 
             # A URL to the license for this module.
             LicenseUri = 'http://www.apache.org/licenses/LICENSE-2.0'
