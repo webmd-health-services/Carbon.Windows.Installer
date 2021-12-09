@@ -14,6 +14,9 @@ file's SHA256 checksum to the `Checksum` parameter, its product name to the `Pro
 product code to the `ProductCode` parameter. The MSI file will only be downloaded if it isn't installed. You can get the
 MSI's checksum with PowerShell's `Get-FileHash` cmdlet. You can get the MSI's product name and code with this module's
 `Get-CMsi` function.
+* Added `ArgumentList` parameter to `Install-CMsi` to pass additional arguments to `msiexec.exe` when installing an MSI.
+* Added `DisplayOption`, `LogOption`, and `LogPath` parameters to allow users to control the display and logging options
+passed to `msiexec.exe`.
 
 
 # 1.0.0

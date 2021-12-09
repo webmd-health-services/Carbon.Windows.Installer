@@ -24,14 +24,13 @@ if( $isPwsh6 )
 }
 
 $testInstaller = Get-CMsi -Path $carbonTestInstallerPath
-$testInstallerWithActions = Get-CMsi -Path $carbonTestInstallerActionsPath
 $testRoot = $null
 $testNum = 0
 
 function Assert-CarbonTestInstallerInstalled
 {
     $Global:Error.Count | Should -Be 0
-    $maxTries = 200
+    $maxTries = 20
     $tryNum = 0
     $writeNewline = $false
     do
@@ -56,7 +55,8 @@ function Assert-CarbonTestInstallerInstalled
 
 function Assert-CarbonTestInstallerNotInstalled
 {
-    $maxTries = 200
+    # Try for twenty seconds
+    $maxTries = 20
     $tryNum = 0
     $writeNewline = $false
     do
@@ -194,7 +194,7 @@ function WhenInstalling
 
         [switch] $MockInstall,
 
-        [switch] $Forced
+        [hashtable] $WithParameter = @{}
     )
 
     if( $MockInstall )
@@ -225,12 +225,12 @@ function WhenInstalling
                                -Checksum $WithExpectedChecksum `
                                -ProductName $testInstaller.ProductName `
                                -ProductCode $testInstaller.ProductCode `
-                               -Force:$Forced
+                               @WithParameter
         $output | Should -BeNullOrEmpty
         return
     }
 
-    $output = Install-CMsi -Path $script:carbonTestInstallerPath -Force:$Forced
+    $output = Install-CMsi -Path $script:carbonTestInstallerPath @WithParameter
     $output | Should -BeNullOrEmpty
 }
 
@@ -317,7 +317,7 @@ Describe 'Install-Msi.when forcing install' {
     It 'should repair' {
         Init
         GivenInstalled
-        WhenInstalling -Forced -MockInstall
+        WhenInstalling -WithParameter @{ 'Force' = $true } -MockInstall
         ThenMsi -Reinstalled
     }
 }
@@ -359,7 +359,7 @@ Describe 'Install-Msi.when forcing install of downloaded installer already insta
     It 'should download and repair the program' {
         Init
         GivenInstalled
-        WhenInstalling -FromWeb -MockInstall -Forced
+        WhenInstalling -FromWeb -MockInstall -WithParameter @{ 'Force' = $true }
         ThenMsi -Downloaded
         ThenMsi -Reinstalled
     }
@@ -386,5 +386,46 @@ Describe 'Install-Msi.when downloaded file url doesn''t have a path' {
         Assert-MockCalled -CommandName 'Invoke-WebRequest' `
                           -ModuleName 'Carbon.Windows.Installer' `
                           -ParameterFilter { $OutFile -match '\\https___httpstat\.us_' }
+    }
+}
+
+Describe 'Install-Msi.when showing passive installer UI' {
+    AfterEach { Reset }
+    It 'should use passive msiexec display option' {
+        Init
+        WhenInstalling -WithParameter @{ 'DisplayMode' = 'Passive' }
+        ThenMsi -Installed
+    }
+}
+
+Describe 'Install-Msi.when customizing logging' {
+    AfterEach { Reset }
+    It 'should log with user options not default options' {
+        Init
+        $logPath = Join-Path -Path $testRoot -ChildPath 'installer.log'
+        WhenInstalling -WithParameter @{ 'LogOption' = '!p' ; 'LogPath' = $logPath ; }
+        ThenMsi -Installed
+        $logPath | Should -Exist
+        $logPath | Should -FileContentMatch -ExpectedContent 'Property\(S\)'
+        $logPath | Should -Not -FileContentMatch -ExpectedContent 'msiexec.exe'
+        $logPath | Should -Not -FileContentMatch -ExpectedContent 'MSI \(s\)'
+        $logPath | Should -Not -FileContentMatch -ExpectedContent '^DEBUG  :'
+    }
+}
+
+Describe 'Install-Msi.when passing extra arguments' {
+    AfterEach { Reset }
+    It 'should pass the arguments to msiexec' {
+        Init
+        WhenInstalling -WithParameter @{ 'ArgumentList' = @('ONE="1"', 'TWO="2"') } -MockInstall
+        Assert-MockCalled -CommandName 'Start-Process' `
+                          -ModuleName 'Carbon.Windows.Installer' `
+                          -ParameterFilter {
+                              Write-Debug 'ArgumentList'
+                              $ArgumentList | Write-Debug
+                              $ArgumentList | Should -Contain 'ONE="1"'
+                              $ArgumentList | Should -Contain 'TWO="2"'
+                              return $true
+                          }
     }
 }

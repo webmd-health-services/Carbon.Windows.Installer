@@ -6,13 +6,12 @@ function Install-Msi
     Installs an MSI.
 
     .DESCRIPTION
-    `Install-CMsi` installs software from an MSI file, without displaying any user interface. If the install fails, the
-    function writes an error and leaves a debug-level log file in the current user's temp directory. The log file name
-    uses the pattern `INSTALLER_FILE_NAME.RANDOM_FILENAME.RANDOM_EXTENSION.log`.
-
-    Pass the path to the MSI to install to the `Path` property. The `Install-CMsi` function reads the product code from
-    the MSI file, and does nothing if a program with that product code is already installed. Otherwise, it runs the
-    installer in quiet mode with `msiexec`. All the program's features will be installed with their default values.
+    `Install-CMsi` installs software from an MSI file, without displaying any user interface. Pass the path to the MSI
+    to install to the `Path` property. The `Install-CMsi` function reads the product name code from the MSI file, and
+    does nothing if a program with that product code is already installed. Otherwise, the function runs the installer in
+    quiet mode (i.e. no UI is visible) with `msiexec`. All the program's features will be installed with their default
+    values. You can control the installer's display mode with the `DisplayMode` parameter: set it to `Passive` to show a
+    UI with just a progress bar, or `Full` to show the UI as-if the user double-clicked the MSI file.
 
     `Install-CMsi` can also download an MSI and install it. Pass the URL to the MSI file to the `Url` parameter. Pass
     the MSI file's SHA256 checksum to the `Checksum` parameter. (Use PowerShell's `Get-FileHash` cmdlet to get the
@@ -20,8 +19,17 @@ function Install-Msi
     the `ProductName` parameter and its product code to the `ProductCode` parameter. Use this module's `Get-CMsi`
     function to get an MSI file's product metadata.
 
+     If the install fails, the function writes an error and leaves a debug-level log file in the current user's temp
+     directory. The log file name begins with the name of the MSI file name, then has a `.`, then a random file name
+     (e.g. `xxxxxxxx.xxx`), then ends with a `.log` extension. You can customize the location of the log file with the
+     `LogPath` parameter. You can customize logging options with the `LogOption` parameter. Default log options are
+    `!*vx` (log all messages, all verbose message, all debug messages, and flush each line to the log file as it is
+    written).
+
     If you want to install the MSI even if it is already installed, use the `-Force` switch. For downloaded MSI files,
     this will cause the file to be downloaded every time `Install-CMsi` is run.
+
+    You can pass additional arguments to `msiexec.exe` when installing the MSI file with the `ArgumentList` parameter.
 
     Requires Windows PowerShell 5.1 or PowerShell 7.1+ on Windows.
 
@@ -74,7 +82,28 @@ function Install-Msi
         [Guid] $ProductCode,
         
         # Install the MSI even if it has already been installed. Will cause a repair/reinstall to run.
-        [Switch] $Force
+        [Switch] $Force,
+
+        # Controls how the MSI UI is displayed to the user. The default is `Quiet`, meaning no UI is shown. Valid values
+        # are `Passive`, a UI showing a progress bar is shown, or `Full`, the UI is displayed to the user as if they
+        # double-clicked the MSI file.
+        [ValidateSet('Quiet', 'Passive', 'Full')]
+        [String] $DisplayMode = 'Quiet',
+
+        # The logging options to use. The default is to log all information (`*`), log verbose output (`v`), log exta
+        # debugging information (`x`), and to flush each line to the log (`!`).
+        [String] $LogOption = '!*vx',
+
+        # The path to the log file. The default is to log to a file in the temporary directory and delete the log file
+        # unless the installation fails. The default log file name begins with the name of the MSI file name, then
+        # has a `.`, then a random file name (e.g. `xxxxxxxx.xxx`), then ends with a `.log` extension.
+        [String] $LogPath,
+
+        # Extra arguments to pass to the installer. These are passed directly after the install option and path to the
+        # MSI file. Do not pass any install option, display option, or logging option in this parameter. Instead, use
+        # the `DisplayMode` parameter to control display options, the `LogOption` parameter to control logging options,
+        # and the `LogPath` parameter to control where the installation log file is saved.
+        [String[]] $ArgumentList
     )
 
     process
@@ -89,6 +118,7 @@ function Install-Msi
                 [Guid] $Code
             )
 
+            $DebugPreference = 'SilentlyContinue'
             $installInfo = Get-CInstalledProgram -Name $Name -ErrorAction Ignore
             if( -not $installInfo )
             {
@@ -129,25 +159,44 @@ function Install-Msi
                     $target = "$($target) $($Msi.ProductVersion)"
                 }
 
-                $installerLogFile = "$($Msi.Path | Split-Path -Leaf).$([IO.Path]::GetRandomFileName()).log"
-                $installerLogFile = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $installerLogFile
-                New-Item -Path $installerLogFile -ItemType 'File' -WhatIf:$false | Out-Null
+                $deleteLog = $false
+                if( -not $LogPath )
+                {
+                    $LogPath = "$($Msi.Path | Split-Path -Leaf).$([IO.Path]::GetRandomFileName()).log"
+                    $LogPath = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $LogPath
+                    $deleteLog = $true
+                }
+                $logParentDir = $LogPath | Split-Path -Parent
+                if( $logParentDir -and -not (Test-Path -Path $logParentDir) )
+                {
+                    New-Item -Path $logParentDir -Force -ItemType 'Directory' | Out-Null
+                }
+                if( -not (Test-Path -Path $LogPath) )
+                {
+                    New-Item -Path $LogPath -ItemType 'File' | Out-Null
+                }
 
                 if( -not $From )
                 {
                     $From = $Msi.Path
                 }
 
-                $argumentList = @(
-                    '/quiet',
-                    '/i',
+                $displayOptions = @{
+                    'Quiet' = '/quiet';
+                    'Passive' = '/passive';
+                    'Full' = '';
+                }
+
+                $ArgumentList = & {
+                    '/i'
                     # Must surround with double quotes. Single quotes are interpreted as part of the path.
-                    """$($msi.Path)""",
-                    # Log EVERYTHING and flush after every line.
-                    "/L!*VX",
+                    """$($msi.Path)"""
+                    $displayOptions[$DisplayMode]
+                    $ArgumentList | Write-Output
+                    "/l$($LogOption)",
                     # Must surround with double quotes. Single quotes are interpreted as part of the path.
-                    """$($installerLogFile)"""
-                )
+                    """$($LogPath)"""
+                } | Where-Object { $_ }
 
                 $action = 'Install'
                 $verb = 'Installing'
@@ -160,8 +209,9 @@ function Install-Msi
                 if( $PSCmdlet.ShouldProcess( $From, $action ) )
                 {
                     Write-Information -Message "$($msgPrefix)$($verb) $($target) from ""$($From)"""
+                    Write-Debug -Message "msiexec.exe $($ArgumentList -join ' ')"
                     $msiProcess = Start-Process -FilePath 'msiexec.exe' `
-                                                -ArgumentList $argumentList `
+                                                -ArgumentList $ArgumentList `
                                                 -NoNewWindow `
                                                 -PassThru `
                                                 -Wait
@@ -169,20 +219,18 @@ function Install-Msi
                     if( $null -ne $msiProcess.ExitCode -and $msiProcess.ExitCode -ne 0 )
                     {
                         $msg = "$($target) $($action.ToLowerInvariant()) failed. Installer ""$($msi.Path)"" returned " +
-                               "exit code $($msiProcess.ExitCode). See the installation log file " +
-                               """$($installerLogFile)"" for more information and " +
-                               'https://docs.microsoft.com/en-us/windows/win32/msi/error-codes for a description of ' +
-                               'the exit code.'
+                               "exit code $($msiProcess.ExitCode). See the installation log file ""$($LogPath)"" for " +
+                               'more information and https://docs.microsoft.com/en-us/windows/win32/msi/error-codes ' +
+                               'for a description of the exit code.'
                         Write-Error $msg -ErrorAction $ErrorActionPreference
                         return
                     }
                 }
 
-                if( (Test-Path -Path $installerLogFile) )
+                if( $deleteLog -and (Test-Path -Path $LogPath) )
                 {
-                    Remove-Item -Path $installerLogFile -ErrorAction Ignore -WhatIf:$false
+                    Remove-Item -Path $LogPath -ErrorAction Ignore
                 }
-
             }
         }
 
