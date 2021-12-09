@@ -1,24 +1,4 @@
 
-# 1.1.0
-
-## Added
-
-* `Get-CMsi` can now read records from *all* of an MSI's internal database tables. By default, only records from the
-`Product` and `Feature` tables are returned. The objects returned by `Get-CMsi` now have a `TableNames` property, which
-is the list of all the tables in the MSI's database, and `Tables`, which contains properties for each included table.
-To include a table, pass its name (or a wildcard) to the new `IncludeTable` parameter.
-* When an installer fails, `Install-CMsi` leaves a debug log of the installation in the user's temp directory. The
-file's name begins with the installer's file name followed by a random file name and has a `.log` extension.
-* `Install-CMsi` can now download an MSI file to install. Pass the URL to the installer to the `Url` parameter, the
-file's SHA256 checksum to the `Checksum` parameter, its product name to the `ProductName` parameter, and its 
-product code to the `ProductCode` parameter. The MSI file will only be downloaded if it isn't installed. You can get the
-MSI's checksum with PowerShell's `Get-FileHash` cmdlet. You can get the MSI's product name and code with this module's
-`Get-CMsi` function.
-* Added `ArgumentList` parameter to `Install-CMsi` to pass additional arguments to `msiexec.exe` when installing an MSI.
-* Added `DisplayOption`, `LogOption`, and `LogPath` parameters to allow users to control the display and logging options
-passed to `msiexec.exe`.
-
-
 # 1.0.0
 
 The `Carbon.Windows.Installer` module was created from functions in the `Carbon` module. These release notes assume
@@ -50,8 +30,8 @@ If migrating from Carbon, you'll need to make the following changes:
   `Get-CInstalledProgram`. The `C` prefix is now required.
 * Remove usages of the `[Carbon.Computer.ProgramInstallInfo]`. `Get-CInstalledProgram` now returns `[PSObject]` objects
   with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
-* Add `-ErrorAction Ignore` or `-ErrorAction SilentlyContinue` to usages of `Get-CInstalledProgram` that are used to
-test if a program exists or not. `Get-CInstalledProgram` now writes an error if a program isn't installed.
+* Add `-ErrorAction Ignore` or `-ErrorAction SilentlyContinue` to usages of `Get-CInstalledProgram` that handle if no
+object is returned. `Get-CInstalledProgram` now writes an error if a program isn't installed.
 
 ### Install-CMsi
 
@@ -65,6 +45,20 @@ test if a program exists or not. `Get-CInstalledProgram` now writes an error if 
 `-Prefix` parameter.
 * `Get-CMsi`: returned objects now have a `GetPropertyValue([String])` method for getting property values.
 * `Get-CInstalledProgram` (i.e. `Get-CProgramInstallInfo`) now writes an error when a program isn't found.
+* `Get-CMsi` can now read records from *all* of an MSI's internal database tables. By default, only records from the
+`Product` and `Feature` tables are returned. The objects returned by `Get-CMsi` now have a `TableNames` property, which
+is the list of all the tables in the MSI's database, and `Tables`, which contains properties for each included table.
+To include a table, pass its name (or a wildcard) to the new `IncludeTable` parameter.
+* `Get-CMsi` can now download MSI files. Pass the URL to the MSI file to the new `Url` parameter. Use the `Path` of the
+return object to get the file's location. Use the new `OutputPath` parameter to save the installer to a specific
+directory or to a specific file.
+* When an installer fails, `Install-CMsi` leaves a debug log of the installation in the user's temp directory. The
+file's name begins with the installer's file name followed by a random file name and has a `.log` extension.
+* `Install-CMsi` can now download an MSI file to install. Pass the URL to the installer to the `Url` parameter, the
+file's SHA256 checksum to the `Checksum` parameter, its product name to the `ProductName` parameter, and its 
+product code to the `ProductCode` parameter. The MSI file will only be downloaded if it isn't installed. You can get the MSI's checksum with PowerShell's `Get-FileHash` cmdlet. You can get the MSI's product name and code with this module's `Get-CMsi` function.
+* Added `ArgumentList` parameter to `Install-CMsi` to pass additional arguments to `msiexec.exe` when installing an MSI.
+* Added `DisplayOption`, `LogOption`, and `LogPath` parameters to allow users to control the display and logging options passed to `msiexec.exe`.
 
 ### Changed
 

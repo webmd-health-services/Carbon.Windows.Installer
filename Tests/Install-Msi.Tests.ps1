@@ -376,19 +376,6 @@ Describe 'Install-Msi.when downloaded file doesn''t match checksum' {
     }
 }
 
-Describe 'Install-Msi.when downloaded file url doesn''t have a path' {
-    AfterEach { Reset }
-    It 'should use url as downloaded file name' {
-        Init
-        WhenInstalling -FromWeb -AtUrl 'https://httpstat.us/'
-        ThenMsi -Downloaded
-        ThenMsi -Installed
-        Assert-MockCalled -CommandName 'Invoke-WebRequest' `
-                          -ModuleName 'Carbon.Windows.Installer' `
-                          -ParameterFilter { $OutFile -match '\\https___httpstat\.us_' }
-    }
-}
-
 Describe 'Install-Msi.when showing passive installer UI' {
     AfterEach { Reset }
     It 'should use passive msiexec display option' {

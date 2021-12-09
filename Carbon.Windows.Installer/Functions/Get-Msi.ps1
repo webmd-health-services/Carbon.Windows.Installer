@@ -51,13 +51,46 @@ function Get-Msi
 
     Demonstrates how to return records from one of an MSI's internal database tables by passing the table name to the
     `IncludeTable` parameter. Wildcards supported.
+
+    .EXAMPLE
+    Get-CMsi -Url 'https://example.com/example.msi'
+
+    Demonstrates how to download an MSI file to read its metadata. The file is saved to the current user's temp
+    directory with the same name as the file name in the URL. The return object will have the path to the MSI file.
+
+    .EXAMPLE
+    Get-CMsi -Url 'https://example.com/example.msi' -OutputPath '~\Downloads'
+
+    Demonstrates how to download an MSI file and save it to a directory using the name of the file from the download
+    URL as the filename. In this case, the file will be saved to `~\Downloads\example.msi`. The return object's `Path`
+    property will contain the full path to the downloaded MSI file.
+
+    .EXAMPLE
+    Get-CMsi -Url 'https://example.com/example.msi' -OutputPath '~\Downloads\new_example.msi'
+
+    Demonstrates how to use a custom file name for the downloaded file by making `OutputPath` be a path to an item that
+    doesn't exist or the path to an existing file.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ByPath')]
     param(
         # Path to the MSI file whose information to retrieve. Wildcards supported.
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName='ByPath',
+                   Position=0)]
         [Alias('FullName')]
         [String[]] $Path,
+
+        # The URL to the MSI file to get. The file will be downloaded to the current user's temp directory. Use the
+        # `OutputPath` parameter to save it somewhere else or use the `Path` property on the returned object to copy the
+        # downloaded file somewhere else.
+        [Parameter(Mandatory, ParameterSetName='ByUrl')]
+        [Uri] $Url,
+
+        # The path where the downloaded MSI file should be saved. By default, the file is downloaded to the current
+        # user's temp directory. If `OutputPath` is a directory, the file will be saved to that directory with the 
+        # same name as file's name in the `Url`. Otherwise, `OutputPath` is considered to be the path to the file where
+        # the downloaded MSI should be saved. Any existing file will be overwritten.
+        [Parameter(ParameterSetName='ByUrl')]
+        [String] $OutputPath,
 
         # Extra tables to read from the MSI and return. By default, only the installer's Property and Feature tables
         # are returned. Wildcards supported. See https://docs.microsoft.com/en-us/windows/win32/msi/database-tables for
@@ -67,6 +100,9 @@ function Get-Msi
 
     begin
     {
+        Set-StrictMode -Version 'Latest'
+        Use-CallerPreference -Cmdlet $PSCmdlet -Session $ExecutionContext.SessionState
+
         $timer = [Diagnostics.Stopwatch]::StartNew()
         $lastWrite = [Diagnostics.Stopwatch]::New()
         function Debug
@@ -83,6 +119,26 @@ function Get-Msi
             $lastWrite.Restart()
         }
 
+        if( $PSCmdlet.ParameterSetName -eq 'ByUrl' )
+        {
+            $msiFileName = $Url.Segments[-1]
+            if( $OutputPath )
+            {
+                if( (Test-Path -Path $OutputPath -PathType Container) )
+                {
+                    $OutputPath = Join-Path -Path $OutputPath -ChildPath $msiFileName
+                }
+            }
+            else
+            {
+                $OutputPath = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $msiFileName
+            }
+            $ProgressPreference = [Management.Automation.ActionPreference]::SilentlyContinue
+            Invoke-WebRequest -Uri $Url -OutFile $OutputPath | Out-Null
+            Get-Item -LiteralPath $OutputPath | Get-Msi -IncludeTable $IncludeTable
+            return
+        }
+
         $IncludeTable = & {
             'Feature'
             'Property'
@@ -90,10 +146,12 @@ function Get-Msi
         } | Select-Object -Unique
     }
 
-    process 
+    process
     {
-        Set-StrictMode -Version 'Latest'
-        Use-CallerPreference -Cmdlet $PSCmdlet -Session $ExecutionContext.SessionState
+        if( $PSCmdlet.ParameterSetName -eq 'ByUrl' )
+        {
+            return
+        }
 
         $Path = Resolve-Path -Path $Path | Select-Object -ExpandProperty 'ProviderPath'
         if( -not $Path )
@@ -205,6 +263,11 @@ function Get-Msi
 
     end
     {
+        if( $PSCmdlet.ParameterSetName -eq 'ByUrl' )
+        {
+            return
+        }
+        
         [GC]::Collect()
     }
 }

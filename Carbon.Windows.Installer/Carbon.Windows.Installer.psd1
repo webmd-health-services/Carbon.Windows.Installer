@@ -18,7 +18,7 @@
     RootModule = 'Carbon.Windows.Installer.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.0'
+    ModuleVersion = '1.0.0'
 
     # ID used to uniquely identify this module
     GUID = '57af6e60-d9f5-4523-8aa3-3e3480fd91cc'
@@ -47,10 +47,10 @@ Functions include:
 an object for each program. Is an object-based and text-based version of Windows' "Programs and Features"/"Apps and
 Features" GUI.
 * `Get-CMsi`: reads an MSI file and returns an object exposing the MSI's internal tables, like product name, product
-code, product version, etc. Let's you inspect an MSI for its metadata without installing it. This function requires
-Windows PowerShell or PowerShell 7.1+ on Windows.
-* `Install-CMsi`: installs a program from an MSI file, or other file that can be installed by Windows. This function
-requires Windows PowerShell or PowerShell 7.1+ on Windows.
+code, product version, etc. Let's you inspect an MSI for its metadata without installing it. Can also download the MSI
+file first. This function requires Windows PowerShell or PowerShell 7.1+ on Windows.
+* `Install-CMsi`: installs a program from an MSI file, or other file that can be installed by Windows. Can also download
+the MSI file to install. This function requires Windows PowerShell or PowerShell 7.1+ on Windows.
 
 System Requirements:
 

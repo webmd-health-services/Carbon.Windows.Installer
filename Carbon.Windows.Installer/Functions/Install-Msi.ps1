@@ -273,18 +273,13 @@ function Install-Msi
             $Force = $false
         }
 
-        $outFile = $Url.Segments[-1]
-        if( -not $outFile -or $outFile -eq '/' )
+        $msi = Get-Msi -Url $Url
+        if( -not $msi )
         {
-            $fsReplaceRegex = [IO.Path]::GetInvalidFileNameChars() | ForEach-Object { [regex]::Escape($_) }
-            $fsReplaceRegex = $fsReplaceRegex -join '|'
-            $outFile = $Url.ToString() -replace $fsReplaceRegex, '_'
+            return
         }
-        $outFile = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $outFile
-        $ProgressPreference = [Management.Automation.ActionPreference]::SilentlyContinue
-        Invoke-WebRequest -Uri $Url -OutFile $outFile -UseBasicParsing | Out-Null
 
-        $actualChecksum = Get-FileHash -LiteralPath $outFile
+        $actualChecksum = Get-FileHash -LiteralPath $msi.Path
         if( $actualChecksum.Hash -ne $Checksum )
         {
             $msg = "Install failed: checksum ""$($actualChecksum.Hash.ToLowerInvariant())"" for installer " +
@@ -293,17 +288,8 @@ function Install-Msi
             return
         }
 
-        try
-        {
-            Get-CMsi -Path $outFile | Invoke-Msiexec -From $Url
-        }
-        finally
-        {
-            if( (Test-Path -LiteralPath $outFile -PathType Leaf) )
-            {
-                Remove-Item -LiteralPath $outFile -Force -ErrorAction Ignore
-            }
-        }
+        $msi | Invoke-Msiexec -From $Url
+
         Write-Debug "$($msgPrefix)-"
     }
 }
