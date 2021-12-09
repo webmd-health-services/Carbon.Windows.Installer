@@ -9,6 +9,11 @@ is the list of all the tables in the MSI's database, and `Tables`, which contain
 To include a table, pass its name (or a wildcard) to the new `IncludeTable` parameter.
 * When an installer fails, `Install-CMsi` leaves a debug log of the installation in the user's temp directory. The
 file's name begins with the installer's file name followed by a random file name and has a `.log` extension.
+* `Install-CMsi` can now download an MSI file to install. Pass the URL to the installer to the `Url` parameter, the
+file's SHA256 checksum to the `Checksum` parameter, its product name to the `ProductName` parameter, and its 
+product code to the `ProductCode` parameter. The MSI file will only be downloaded if it isn't installed. You can get the
+MSI's checksum with PowerShell's `Get-FileHash` cmdlet. You can get the MSI's product name and code with this module's
+`Get-CMsi` function.
 
 
 # 1.0.0

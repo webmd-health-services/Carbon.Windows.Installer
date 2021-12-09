@@ -17,10 +17,14 @@ $carbonTestInstallerPath = Join-Path -Path $msiRootPath -ChildPath 'CarbonTestIn
 $carbonTestInstallerActionsPath =
     Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstallerWithCustomActions.msi' -Resolve
 $isPwsh6 = $PSVersionTable['PSVersion'].Major -eq 6
-if( -not $isPwsh6 )
+if( $isPwsh6 )
 {
-    $testInstallerWithActions = Get-CMsi -Path $carbonTestInstallerActionsPath
+    # PowerShell 6 doesn't support COM APIs
+    return
 }
+
+$testInstaller = Get-CMsi -Path $carbonTestInstallerPath
+$testInstallerWithActions = Get-CMsi -Path $carbonTestInstallerActionsPath
 $testRoot = $null
 $testNum = 0
 
@@ -29,6 +33,7 @@ function Assert-CarbonTestInstallerInstalled
     $Global:Error.Count | Should -Be 0
     $maxTries = 200
     $tryNum = 0
+    $writeNewline = $false
     do
     {
         $item = Get-CInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
@@ -37,9 +42,15 @@ function Assert-CarbonTestInstallerInstalled
             break
         }
 
+        Write-Host '.' -NoNewline
+        $writeNewline = $true
         Start-Sleep -Milliseconds 100
     }
     while( $tryNum++ -lt $maxTries )
+    if( $writeNewline )
+    {
+        Write-Host ''
+    }
     $item | Should -Not -BeNullOrEmpty
 }
 
@@ -47,6 +58,7 @@ function Assert-CarbonTestInstallerNotInstalled
 {
     $maxTries = 200
     $tryNum = 0
+    $writeNewline = $false
     do
     {
         $item = Get-CInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
@@ -55,11 +67,23 @@ function Assert-CarbonTestInstallerNotInstalled
             break
         }
 
+        Write-Host '.' -NoNewline
+        $writeNewline = $true
         Start-Sleep -Milliseconds 100
     }
     while( $tryNum++ -lt $maxTries )
 
+    if( $writeNewline )
+    {
+        Write-Host ''
+    }
     $item | Should -BeNullOrEmpty
+}
+
+function GivenInstalled
+{
+    Install-CMsi -Path $carbonTestInstallerPath
+    Assert-CarbonTestInstallerInstalled
 }
 
 function Init
@@ -75,6 +99,60 @@ function Init
 function Reset
 {
     Uninstall-CarbonTestInstaller
+}
+
+function ThenMsi
+{
+    [CmdletBinding()]
+    param(
+        [switch] $Not,
+
+        [switch] $Downloaded,
+
+        [switch] $Installed,
+
+        [switch] $InTempDirectory,
+
+        [switch] $Reinstalled
+    )
+
+    if( $Downloaded )
+    {
+        $times = 1
+        if( $Not )
+        {
+            $times = 0
+        }
+        Assert-MockCalled -CommandName 'Invoke-WebRequest' -ModuleName 'Carbon.Windows.Installer' -Times $times
+    }
+
+    if( $Installed )
+    {
+        if( $Not )
+        {
+            Assert-CarbonTestInstallerNotInstalled
+        }
+        else
+        {
+            Assert-CarbonTestInstallerInstalled
+        }
+    }
+
+    if( $InTempDirectory )
+    {
+        $path = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath 'Carbon*.msi'
+        $path | Should -Not:$Not -Exist
+    }
+
+    if( $Reinstalled )
+    {
+        $times = 1
+        if( $Not )
+        {
+            $times = 0
+        }
+        Assert-MockCalled -CommandName 'Start-Process' -ModuleName 'Carbon.Windows.Installer' -Times $times
+    }
 }
 
 function Uninstall-CarbonTestInstaller
@@ -98,17 +176,67 @@ function Uninstall-CarbonTestInstaller
         }
     Assert-CarbonTestInstallerNotInstalled
 
-    # @( 'CarbonTestInstaller.msi', 'CarbonTestInstallerWithCustomActions.msi', 'One.msi', 'Two.msi', 'Installer With Spaces.msi') | 
-    #     ForEach-Object { & "C:\Sysinternals\handle.exe" ($_ | Split-Path -Leaf) -nobanner } |
-    #     Where-Object { $_ } |
-    #     ForEach-Object { "  $($_)" } |
-    #     Write-Verbose -Verbose
+    Get-ChildItem -Path ([IO.Path]::GetTempPath()) -Filter '*.msi' | Remove-Item -Force
 }
 
+function WhenInstalling
+{
+    [CmdletBinding(DefaultParameterSetName='FromFile')]
+    param(
+        [Parameter(Mandatory, ParameterSetName='FromWeb')]
+        [switch] $FromWeb,
+
+        [Parameter(ParameterSetName='FromWeb')]
+        [Uri] $AtUrl = 'https://httpstat.us/200' ,
+
+        [Parameter(ParameterSetName='FromWeb')]
+        $WithExpectedChecksum,
+
+        [switch] $MockInstall,
+
+        [switch] $Forced
+    )
+
+    if( $MockInstall )
+    {
+        New-Alias -Name 'Start-InstallMsiTestProcess' -Value 'Microsoft.PowerShell.Management\Start-Process'
+        Mock -CommandName 'Start-Process' `
+             -ModuleName 'Carbon.Windows.Installer' `
+             -ParameterFilter { $FilePath -eq 'msiexec.exe' } `
+             -MockWith { Start-Process -FilePath 'cmd' -ArgumentList '/c', 'exit' -NoNewWindow -PassThru }
+    }
+
+    if( $FromWeb )
+    {
+        $installerPath = $script:carbonTestInstallerPath
+        Mock -CommandName 'Invoke-WebRequest' `
+             -ModuleName 'Carbon.Windows.Installer' `
+             -MockWith {
+                 param(
+                     [String] $OutFile
+                 )
+                 Copy-Item -Path $installerPath -Destination $OutFile }.GetNewClosure()
+
+        if( -not $WithExpectedChecksum )
+        {
+            $WithExpectedChecksum = (Get-FileHash -Path $carbonTestInstallerPath).Hash
+        }
+        $output = Install-CMsi -Url $AtUrl `
+                               -Checksum $WithExpectedChecksum `
+                               -ProductName $testInstaller.ProductName `
+                               -ProductCode $testInstaller.ProductCode `
+                               -Force:$Forced
+        $output | Should -BeNullOrEmpty
+        return
+    }
+
+    $output = Install-CMsi -Path $script:carbonTestInstallerPath -Force:$Forced
+    $output | Should -BeNullOrEmpty
+}
 
 Describe 'Install-Msi.when passed path to a non-MSI file' {
     AfterEach { Reset }
-    It 'should validate file is an MSI' -Skip:$isPwsh6 {
+    It 'should validate file is an MSI' {
         Init
         Install-CMsi -Path $PSCommandPath -ErrorAction SilentlyContinue
         $Global:Error.Count | Should -BeGreaterThan 0
@@ -118,7 +246,7 @@ Describe 'Install-Msi.when passed path to a non-MSI file' {
 
 Describe 'Install-Msi.when using WhatIf' {
     AfterEach { Reset }
-    It 'should support what if' -Skip:$isPwsh6 {
+    It 'should support what if' {
         Init
         Assert-CarbonTestInstallerNotInstalled
         Install-CMsi -Path $carbonTestInstallerPath -WhatIf
@@ -129,7 +257,7 @@ Describe 'Install-Msi.when using WhatIf' {
 
 Describe 'Install-Msi.when installing' {
     AfterEach { Reset }
-    It 'should install msi' -Skip:$isPwsh6 {
+    It 'should install msi' {
         Init
         Assert-CarbonTestInstallerNotInstalled
         Install-CMsi -Path $carbonTestInstallerPath
@@ -139,12 +267,12 @@ Describe 'Install-Msi.when installing' {
 
 Describe 'Install-Msi.when installer fails' {
     AfterEach { Reset }
-    It 'should handle failed installer' -Skip:$isPwsh6 {
+    It 'should handle failed installer' {
         Init
         $logFilePath = $carbonTestInstallerActionsPath | Split-Path -Leaf
         $logFilePath = "$($logFilePath).*.*.log"
         $logFilePath = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath $logFilePath
-        Get-Item -Path $logFilePath -ErrorAction Ignore | Remove-Item -Verbose
+        Get-Item -Path $logFilePath -ErrorAction Ignore | Remove-Item
         $envVarName = 'CARBON_TEST_INSTALLER_THROW_INSTALL_EXCEPTION'
         [Environment]::SetEnvironmentVariable($envVarName, $true.ToString(), 'User')
         try
@@ -165,7 +293,7 @@ Describe 'Install-Msi.when installer fails' {
 
 Describe 'Install-Msi.when using wildcards in path to installer' {
     AfterEach { Reset }
-    It 'should support wildcards' -Skip:$isPwsh6 {
+    It 'should support wildcards' {
         Init
         Copy-Item $carbonTestInstallerPath -Destination (Join-Path -Path $script:testRoot -ChildPath 'One.msi')
         Copy-Item $carbonTestInstallerPath -Destination (Join-Path -Path $script:testRoot -ChildPath 'Two.msi')
@@ -174,80 +302,89 @@ Describe 'Install-Msi.when using wildcards in path to installer' {
     }
 }
 
-Describe 'Install-Msi.when product already installed' {
+Describe 'Install-Msi.when already installed' {
     AfterEach { Reset }
-    It 'should not reinstall if already installed' -Skip:$isPwsh6 {
+    It 'should not reinstall if already installed' {
         Init
-        Install-CMsi -Path $carbonTestInstallerActionsPath
-        Assert-CarbonTestInstallerInstalled
-        $installDir = Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath $testInstallerWithActions.Manufacturer
-        $installDir = Join-Path -Path $installDir -ChildPath $testInstallerWithActions.ProductName
-        $installDir | Should -Exist
-        $tempName = [IO.Path]::GetRandomFileName()
-        Rename-Item -Path $installDir -NewName $tempName
-        try
-        {
-            Install-CMsi -Path $carbonTestInstallerActionsPath
-            $installDir | Should -Not -Exist
-        }
-        finally
-        {
-            $tempDir = Split-Path -Path $installDir -Parent
-            $tempDir = Join-Path -Path $tempDir -ChildPath $tempName
-            Rename-Item -Path $tempDir -NewName (Split-Path -Path $installDir -Leaf)
-        }
+        GivenInstalled
+        WhenInstalling -MockInstall
+        ThenMsi -Not -Reinstalled
     }
 }
 
-Describe 'Install-Msi.when forcing product re-installation' {
+Describe 'Install-Msi.when forcing install' {
     AfterEach { Reset }
-    It 'should reinstall if forced to' -Skip:$isPwsh6 {
+    It 'should repair' {
         Init
-        Install-CMsi -Path $carbonTestInstallerActionsPath
-        Assert-CarbonTestInstallerInstalled
-    
-        $installDir = Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath $testInstallerWithActions.Manufacturer
-        $installDir = Join-Path -Path $installDir -ChildPath $testInstallerWithActions.ProductName
-        $maxTries = 100
-        $tryNum = 0
-        do
-        {
-            if( (Test-Path -Path $installDir -PathType Container) )
-            {
-                break
-            }
-            Start-Sleep -Milliseconds 100
-        }
-        while( $tryNum++ -lt $maxTries )
-    
-        $installDir | Should -Exist
-    
-        $tryNum = 0
-        do
-        {
-            Remove-Item -Path $installDir -Recurse -ErrorAction Ignore
-            if( -not (Test-Path -Path $installDir -PathType Container) )
-            {
-                break
-            }
-            Start-Sleep -Milliseconds 100
-        }
-        while( $tryNum++ -lt $maxTries )
-    
-        $installDir | Should -Not -Exist
-    
-        Install-CMsi -Path $carbonTestInstallerActionsPath -Force
-        $installDir | Should -Exist
+        GivenInstalled
+        WhenInstalling -Forced -MockInstall
+        ThenMsi -Reinstalled
     }
 }
 
 Describe 'Install-Msi.when there are spaces in the path to the MSI' {
     AfterEach { Reset }
-    It 'should install msi with spaces in path' -Skip:$isPwsh6 {
+    It 'should install msi with spaces in path' {
         Init
         $newInstaller = Join-Path -Path $script:testRoot -ChildPath 'Installer With Spaces.msi'
         Copy-Item -Path $carbonTestInstallerPath -Destination $newInstaller
         Install-CMsi -Path $newInstaller
         Assert-CarbonTestInstallerInstalled
+    }
+}
+
+Describe 'Install-Msi.when downloading installer' {
+    AfterEach { Reset }
+    It 'should download and install the program' {
+        Init
+        WhenInstalling -FromWeb
+        ThenMsi -Downloaded -Installed
+        ThenMsi -Not -InTempDirectory
+    }
+}
+
+Describe 'Install-Msi.when installer to download already installed' {
+    AfterEach { Reset }
+    It 'should not download or install the program' {
+        Init
+        GivenInstalled
+        WhenInstalling -FromWeb -MockInstall
+        ThenMsi -Not -Downloaded
+        ThenMsi -Not -Reinstalled
+    }
+}
+
+Describe 'Install-Msi.when forcing install of downloaded installer already installed' {
+    AfterEach { Reset }
+    It 'should download and repair the program' {
+        Init
+        GivenInstalled
+        WhenInstalling -FromWeb -MockInstall -Forced
+        ThenMsi -Downloaded
+        ThenMsi -Reinstalled
+    }
+}
+
+Describe 'Install-Msi.when downloaded file doesn''t match checksum' {
+    AfterEach { Reset }
+    It 'should download but not install the program' {
+        Init
+        WhenInstalling -FromWeb -WithExpectedChecksum 'deadbee' -ErrorAction SilentlyContinue
+        ThenMsi -Downloaded
+        ThenMsi -Not -Installed
+        $Global:Error | Should -Match 'does not match expected checksum'
+    }
+}
+
+Describe 'Install-Msi.when downloaded file url doesn''t have a path' {
+    AfterEach { Reset }
+    It 'should use url as downloaded file name' {
+        Init
+        WhenInstalling -FromWeb -AtUrl 'https://httpstat.us/'
+        ThenMsi -Downloaded
+        ThenMsi -Installed
+        Assert-MockCalled -CommandName 'Invoke-WebRequest' `
+                          -ModuleName 'Carbon.Windows.Installer' `
+                          -ParameterFilter { $OutFile -match '\\https___httpstat\.us_' }
     }
 }
