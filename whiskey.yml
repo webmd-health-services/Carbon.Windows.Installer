@@ -6,10 +6,16 @@ Build:
     - "*/*": alpha$(WHISKEY_BUILD_NUMBER)
     - develop: rc$(WHISKEY_BUILD_NUMBER)
 
+- Version:
+    IfExists: env:APPVEYOR_PULL_REQUEST_NUMBER
+    Prerelease: rc$(WHISKEY_BUILD_NUMBER)
+
 - Exec:
-      OnlyBy: BuildServer
-      Path: appveyor
-      Argument: [ UpdateBuild, -Version, $(WHISKEY_SEMVER2) ]
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [ UpdateBuild, -Version, $(WHISKEY_SEMVER2) ]
+
+
 
 - GetPowerShellModule:
     Name: VSSetup
