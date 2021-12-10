@@ -23,7 +23,7 @@ if( $isPwsh6 )
     return
 }
 
-$testInstaller = Get-CMsi -Path $carbonTestInstallerPath
+$testInstaller = Get-TCMsi -Path $carbonTestInstallerPath
 $testRoot = $null
 $testNum = 0
 
@@ -35,7 +35,7 @@ function Assert-CarbonTestInstallerInstalled
     $writeNewline = $false
     do
     {
-        $item = Get-CInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
+        $item = Get-TCInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
         if( $item )
         {
             break
@@ -61,7 +61,7 @@ function Assert-CarbonTestInstallerNotInstalled
     $writeNewline = $false
     do
     {
-        $item = Get-CInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
+        $item = Get-TCInstalledProgram -Name 'Carbon Test Installer*' -ErrorAction Ignore
         if( -not $item )
         {
             break
@@ -82,7 +82,7 @@ function Assert-CarbonTestInstallerNotInstalled
 
 function GivenInstalled
 {
-    Install-CMsi -Path $carbonTestInstallerPath
+    Install-TCMsi -Path $carbonTestInstallerPath
     Assert-CarbonTestInstallerInstalled
 }
 
@@ -158,8 +158,8 @@ function ThenMsi
 function Uninstall-CarbonTestInstaller
 {
     Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'MSI') -Filter '*.msi' |
-        Get-CMsi |
-        Where-Object { Get-CInstalledProgram -Name $_.ProductName -ErrorAction Ignore } |
+        Get-TCMsi |
+        Where-Object { Get-TCInstalledProgram -Name $_.ProductName -ErrorAction Ignore } |
         ForEach-Object {
             #msiexec /fa $_.Path /quiet /l*vx 'D:\restore.log'
             $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/quiet","/fa",('"{0}"' -f $_.Path) -NoNewWindow -Wait -PassThru
@@ -221,7 +221,7 @@ function WhenInstalling
         {
             $WithExpectedChecksum = (Get-FileHash -Path $carbonTestInstallerPath).Hash
         }
-        $output = Install-CMsi -Url $AtUrl `
+        $output = Install-TCMsi -Url $AtUrl `
                                -Checksum $WithExpectedChecksum `
                                -ProductName $testInstaller.ProductName `
                                -ProductCode $testInstaller.ProductCode `
@@ -230,7 +230,7 @@ function WhenInstalling
         return
     }
 
-    $output = Install-CMsi -Path $script:carbonTestInstallerPath @WithParameter
+    $output = Install-TCMsi -Path $script:carbonTestInstallerPath @WithParameter
     $output | Should -BeNullOrEmpty
 }
 
@@ -238,7 +238,7 @@ Describe 'Install-Msi.when passed path to a non-MSI file' {
     AfterEach { Reset }
     It 'should validate file is an MSI' {
         Init
-        Install-CMsi -Path $PSCommandPath -ErrorAction SilentlyContinue
+        Install-TCMsi -Path $PSCommandPath -ErrorAction SilentlyContinue
         $Global:Error.Count | Should -BeGreaterThan 0
         $Global:Error[0] | Should -Match 'Exception opening MSI database'
     }
@@ -249,7 +249,7 @@ Describe 'Install-Msi.when using WhatIf' {
     It 'should support what if' {
         Init
         Assert-CarbonTestInstallerNotInstalled
-        Install-CMsi -Path $carbonTestInstallerPath -WhatIf
+        Install-TCMsi -Path $carbonTestInstallerPath -WhatIf
         $Global:Error.Count | Should -Be 0
         Assert-CarbonTestInstallerNotInstalled
     }
@@ -260,7 +260,7 @@ Describe 'Install-Msi.when installing' {
     It 'should install msi' {
         Init
         Assert-CarbonTestInstallerNotInstalled
-        Install-CMsi -Path $carbonTestInstallerPath
+        Install-TCMsi -Path $carbonTestInstallerPath
         Assert-CarbonTestInstallerInstalled
     }
 }
@@ -277,7 +277,7 @@ Describe 'Install-Msi.when installer fails' {
         [Environment]::SetEnvironmentVariable($envVarName, $true.ToString(), 'User')
         try
         {
-            Install-CMsi -Path $carbonTestInstallerActionsPath -ErrorAction SilentlyContinue
+            Install-TCMsi -Path $carbonTestInstallerActionsPath -ErrorAction SilentlyContinue
             Assert-CarbonTestInstallerNotInstalled
         }
         finally
@@ -297,7 +297,7 @@ Describe 'Install-Msi.when using wildcards in path to installer' {
         Init
         Copy-Item $carbonTestInstallerPath -Destination (Join-Path -Path $script:testRoot -ChildPath 'One.msi')
         Copy-Item $carbonTestInstallerPath -Destination (Join-Path -Path $script:testRoot -ChildPath 'Two.msi')
-        Install-CMsi -Path (Join-Path -Path $script:testRoot -ChildPath '*.msi')
+        Install-TCMsi -Path (Join-Path -Path $script:testRoot -ChildPath '*.msi')
         Assert-CarbonTestInstallerInstalled
     }
 }
@@ -328,7 +328,7 @@ Describe 'Install-Msi.when there are spaces in the path to the MSI' {
         Init
         $newInstaller = Join-Path -Path $script:testRoot -ChildPath 'Installer With Spaces.msi'
         Copy-Item -Path $carbonTestInstallerPath -Destination $newInstaller
-        Install-CMsi -Path $newInstaller
+        Install-TCMsi -Path $newInstaller
         Assert-CarbonTestInstallerInstalled
     }
 }

@@ -21,7 +21,7 @@ function Init
 }
 
 Describe 'Get-InstalledProgram.when getting all programs' {
-    $programs = Get-CInstalledProgram
+    $programs = Get-TCInstalledProgram
     It 'should get all installed programs' {
         $programs | Should -Not -BeNullOrEmpty
     }
@@ -162,8 +162,8 @@ Describe 'Get-InstalledProgram.when getting all programs' {
 }
 
 Describe 'Get-InstalledProgram.when getting a program by name' {
-    $p = Get-CInstalledProgram | Select-Object -First 1
-    $p2 = Get-CInstalledProgram $p.DisplayName
+    $p = Get-TCInstalledProgram | Select-Object -First 1
+    $p2 = Get-TCInstalledProgram $p.DisplayName
     It 'should get just that program' {
         $p2 | Should -Not -BeNullOrEmpty
         Compare-Object -ReferenceObject $p -DifferenceObject $p2 | Should -BeNullOrEmpty
@@ -173,7 +173,7 @@ Describe 'Get-InstalledProgram.when getting a program by name' {
 Describe 'Get-InstalledProgram.when program doesn''t exist' {
     It 'should fail' {
         Init
-        Get-CInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+        Get-TCInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
         $Global:Error | Should -Match '"CwiFubarSnafu" is not installed'
     }
 }
@@ -181,18 +181,18 @@ Describe 'Get-InstalledProgram.when program doesn''t exist' {
 Describe 'Get-InstalledProgram.when program doesn''t exist and ignoring errors' {
     It 'should not fail' {
         Init
-        Get-CInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction Ignore | Should -BeNullOrEmpty
+        Get-TCInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction Ignore | Should -BeNullOrEmpty
         $Global:Error | Should -BeNullOrEmpty
     }
 }
 
 Describe 'Get-InstalledProgram.when getting programs by wildcard' {
 
-    $p = Get-CInstalledProgram | Select-Object -First 1
+    $p = Get-TCInstalledProgram | Select-Object -First 1
 
     $wildcard = $p.DisplayName.Substring(0,$p.DisplayName.Length - 1)
     $wildcard = '{0}*' -f $wildcard
-    $p2 = Get-CInstalledProgram $wildcard
+    $p2 = Get-TCInstalledProgram $wildcard
 
     It 'should find the program' {
         $p2 | Should -Not -BeNullOrEmpty
@@ -203,14 +203,14 @@ Describe 'Get-InstalledProgram.when getting programs by wildcard' {
 Describe 'Get-InstalledProgram.when getting programs with a wildcard that doesn''t match any program' {
     It 'should not fail' {
         Init
-        Get-CInstalledProgram -Name 'CwiFubarSnafu*' | Should -BeNullOrEmpty
+        Get-TCInstalledProgram -Name 'CwiFubarSnafu*' | Should -BeNullOrEmpty
         $Global:Error | Should -BeNullOrEmpty
     }
 }
 
 Describe 'Get-InstalledProgram.when there are invalid integer versions' {
     
-    $program = Get-CInstalledProgram | Select-Object -First 1
+    $program = Get-TCInstalledProgram | Select-Object -First 1
 
     $regKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Carbon.Windows.Installer'
     if( -not (Test-Path -Path $regKeyPath ) )
@@ -224,7 +224,7 @@ Describe 'Get-InstalledProgram.when there are invalid integer versions' {
         New-ItemProperty -Path $regKeyPath -Name 'DisplayName' -Value $programName -PropertyType 'String'
         New-ItemProperty -Path $regKeyPath -Name 'Version' -Value 0xff000000 -PropertyType 'DWord'
 
-        $program = Get-CInstalledProgram -Name $programName
+        $program = Get-TCInstalledProgram -Name $programName
         
         It 'should ignore the invalid version' {
             $program | Should -Not -BeNullOrEmpty

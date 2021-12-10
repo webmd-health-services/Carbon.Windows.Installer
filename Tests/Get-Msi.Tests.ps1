@@ -129,7 +129,7 @@ function WhenGettingMsi
         $WithParameter['Path'] = $testInstallerPath;
     }
 
-    $script:result = Get-CMsi @WithParameter
+    $script:result = Get-TCMsi @WithParameter
 }
 
 Describe 'Get-Msi.when getting MSI with default tables' {
@@ -142,7 +142,7 @@ Describe 'Get-Msi.when getting MSI with default tables' {
 
 Describe 'Get-Msi' {
     It 'should accept pipeline input' {
-        $msi = Get-ChildItem -Path $msiRootPath -Filter '*.msi' | Get-CMsi
+        $msi = Get-ChildItem -Path $msiRootPath -Filter '*.msi' | Get-TCMsi
         $msi | Should -Not -BeNullOrEmpty
         $msi | ForEach-Object { ThenMsiObjectReturned @{ 'Manufacturer' = 'Carbon' ; 'ProductVersion' = '1.0.0' ; 'ProductLanguage' = '1033' ;} }
     }
@@ -150,7 +150,7 @@ Describe 'Get-Msi' {
     It 'should accept array of strings' {
         $path = Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstaller.msi'
 
-        $msi = Get-CMsi -Path @( $path, $path )
+        $msi = Get-TCMsi -Path @( $path, $path )
         ,$msi | Should -BeOfType ([object[]])
         foreach( $item in $msi )
         {
@@ -162,7 +162,7 @@ Describe 'Get-Msi' {
         $path = Join-Path -Path $msiRootPath -ChildPath 'CarbonTestInstaller.msi'
 
         $item = Get-Item -Path $path
-        $msi = Get-CMsi -Path @( $item, $item )
+        $msi = Get-TCMsi -Path @( $item, $item )
 
         ,$msi | Should -BeOfType ([object[]])
         foreach( $item in $msi )
@@ -172,7 +172,7 @@ Describe 'Get-Msi' {
     }
 
     It 'should support wildcards' {
-        $msi = Get-CMsi -Path (Join-Path -Path $msiRootPath -ChildPath '*.msi')
+        $msi = Get-TCMsi -Path (Join-Path -Path $msiRootPath -ChildPath '*.msi')
         ,$msi | Should -BeOfType ([object[]])
         foreach( $item in $msi )
         {
