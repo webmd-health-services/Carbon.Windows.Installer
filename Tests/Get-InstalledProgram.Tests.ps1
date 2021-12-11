@@ -15,18 +15,18 @@ Set-StrictMode -Version 'Latest'
 
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Test.ps1' -Resolve)
 
-function Init
-{
-    $Global:Error.Clear()
-}
+Describe 'Get-InstalledProgram' {
+    BeforeEach {
+        $Global:Error.Clear()
+    }
 
-Describe 'Get-InstalledProgram.when getting all programs' {
-    $programs = Get-TCInstalledProgram
     It 'should get all installed programs' {
-        $programs | Should -Not -BeNullOrEmpty
+       $programs = Get-TCInstalledProgram
+       $programs | Should -Not -BeNullOrEmpty
     }
 
     It ('should get information about each program') {
+        $programs = Get-TCInstalledProgram
         foreach( $program in $programs )
         {
             Write-Verbose -Message $program.DisplayName
@@ -159,82 +159,64 @@ Describe 'Get-InstalledProgram.when getting all programs' {
             }
         }
     }
-}
 
-Describe 'Get-InstalledProgram.when getting a program by name' {
-    $p = Get-TCInstalledProgram | Select-Object -First 1
-    $p2 = Get-TCInstalledProgram $p.DisplayName
-    It 'should get just that program' {
+    It 'should get a program by its name' {
+        $p = Get-TCInstalledProgram | Select-Object -First 1
+        $p2 = Get-TCInstalledProgram $p.DisplayName
         $p2 | Should -Not -BeNullOrEmpty
         Compare-Object -ReferenceObject $p -DifferenceObject $p2 | Should -BeNullOrEmpty
     }
-}
 
-Describe 'Get-InstalledProgram.when program doesn''t exist' {
-    It 'should fail' {
-        Init
+    It 'should fail when a program does not exist' {
         Get-TCInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
         $Global:Error | Should -Match '"CwiFubarSnafu" is not installed'
     }
-}
 
-Describe 'Get-InstalledProgram.when program doesn''t exist and ignoring errors' {
-    It 'should not fail' {
-        Init
+    It 'should not fail when a program does not exist and ignoring errors' {
         Get-TCInstalledProgram -Name 'CwiFubarSnafu' -ErrorAction Ignore | Should -BeNullOrEmpty
         $Global:Error | Should -BeNullOrEmpty
     }
-}
 
-Describe 'Get-InstalledProgram.when getting programs by wildcard' {
+    It 'should find programs with wildcards' {
+        $p = Get-TCInstalledProgram | Select-Object -First 1
 
-    $p = Get-TCInstalledProgram | Select-Object -First 1
-
-    $wildcard = $p.DisplayName.Substring(0,$p.DisplayName.Length - 1)
-    $wildcard = '{0}*' -f $wildcard
-    $p2 = Get-TCInstalledProgram $wildcard
-
-    It 'should find the program' {
-        $p2 | Should -Not -BeNullOrEmpty
+        $wildcard = $p.DisplayName.Substring(0,$p.DisplayName.Length - 1)
+        $wildcard = '{0}*' -f $wildcard
+        $p2 = Get-TCInstalledProgram $wildcard
+    
+            $p2 | Should -Not -BeNullOrEmpty
         Compare-Object -ReferenceObject $p -DifferenceObject $p2 | Should -BeNullOrEmpty
     }
-}
 
-Describe 'Get-InstalledProgram.when getting programs with a wildcard that doesn''t match any program' {
-    It 'should not fail' {
-        Init
+    It 'should not fail when wildcard does not match any programs' {
         Get-TCInstalledProgram -Name 'CwiFubarSnafu*' | Should -BeNullOrEmpty
         $Global:Error | Should -BeNullOrEmpty
     }
-}
 
-Describe 'Get-InstalledProgram.when there are invalid integer versions' {
-    
-    $program = Get-TCInstalledProgram | Select-Object -First 1
-
-    $regKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Carbon.Windows.Installer'
-    if( -not (Test-Path -Path $regKeyPath ) )
-    {
-        New-Item -Path $regKeyPath -ItemType RegistryKey -Force
-    }
-
-    try
-    {
-        $programName = 'Carbon+Get-CInstalledProgram'
-        New-ItemProperty -Path $regKeyPath -Name 'DisplayName' -Value $programName -PropertyType 'String'
-        New-ItemProperty -Path $regKeyPath -Name 'Version' -Value 0xff000000 -PropertyType 'DWord'
-
-        $program = Get-TCInstalledProgram -Name $programName
+    It 'should ignore invalid integer version' {
         
-        It 'should ignore the invalid version' {
+        $program = Get-TCInstalledProgram | Select-Object -First 1
+
+        $regKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Carbon.Windows.Installer'
+        if( -not (Test-Path -Path $regKeyPath ) )
+        {
+            New-Item -Path $regKeyPath -ItemType RegistryKey -Force
+        }
+
+        try
+        {
+            $programName = 'Carbon+Get-CInstalledProgram'
+            New-ItemProperty -Path $regKeyPath -Name 'DisplayName' -Value $programName -PropertyType 'String'
+            New-ItemProperty -Path $regKeyPath -Name 'Version' -Value 0xff000000 -PropertyType 'DWord'
+
+            $program = Get-TCInstalledProgram -Name $programName
+        
             $program | Should -Not -BeNullOrEmpty
             $program.Version | Should -BeNullOrEmpty
         }
+        finally
+        {
+            Remove-Item -Path $regKeyPath -Recurse
+        }
     }
-    finally
-    {
-        Remove-Item -Path $regKeyPath -Recurse
-    }
-    
-
 }
