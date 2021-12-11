@@ -108,6 +108,9 @@ function Install-Msi
 
     process
     {
+        Set-StrictMode -Version 'Latest'
+        Use-CallerPreference -Cmdlet $PSCmdlet -Session $ExecutionContext.SessionState
+
         function Test-ProgramInstalled
         {
             [CmdletBinding()]
@@ -119,7 +122,7 @@ function Install-Msi
             )
 
             $DebugPreference = 'SilentlyContinue'
-            $installInfo = Get-CInstalledProgram -Name $Name -ErrorAction Ignore
+            $installInfo = Get-InstalledProgram -Name $Name -ErrorAction Ignore
             if( -not $installInfo )
             {
                 return $false
@@ -209,12 +212,18 @@ function Install-Msi
                 if( $PSCmdlet.ShouldProcess( $From, $action ) )
                 {
                     Write-Information -Message "$($msgPrefix)$($verb) $($target) from ""$($From)"""
-                    Write-Debug -Message "msiexec.exe $($ArgumentList -join ' ')"
+                    Write-Verbose -Message "msiexec.exe $($ArgumentList -join ' ')"
+                    $timer = [Diagnostics.Stopwatch]::StartNew()
                     $msiProcess = Start-Process -FilePath 'msiexec.exe' `
                                                 -ArgumentList $ArgumentList `
                                                 -NoNewWindow `
                                                 -PassThru `
                                                 -Wait
+
+                    $timer.Stop()
+                    $msg =
+                        "            exit($($msiProcess.ExitCode)) in $($timer.Elapsed.TotalSeconds.ToString('0.000'))s"
+                    Write-Verbose $msg
 
                     if( $null -ne $msiProcess.ExitCode -and $msiProcess.ExitCode -ne 0 )
                     {
@@ -234,15 +243,12 @@ function Install-Msi
             }
         }
 
-        Set-StrictMode -Version 'Latest'
-        Use-CallerPreference -Cmdlet $PSCmdlet -Session $ExecutionContext.SessionState
-
         $msgPrefix = "[$($MyInvocation.MyCommand.Name)]  "
         Write-Debug "$($msgPrefix)+"
         
         if( $Path )
         {
-            Get-CMsi -Path $Path |
+            Get-Msi -Path $Path |
                 Where-Object {
                     $msiInfo = $_
 

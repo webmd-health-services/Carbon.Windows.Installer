@@ -56,9 +56,6 @@ function Get-InstalledProgram
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -Session $ExecutionContext.SessionState
 
-    $msgPrefix = "[$($MyInvocation.MyCommand.Name)]  "
-    Write-Debug "$($msgPrefix)+"
-
     function Get-KeyStringValue
     {
         [CmdletBinding()]
@@ -104,7 +101,7 @@ function Get-InstalledProgram
         $null = New-PSDrive -Name 'HKU' -PSProvider Registry -Root 'HKEY_USERS' -WhatIf:$false
     }
 
-    $foundPrograms = @()
+    $numFound = 0
     & {
             Get-ChildItem -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
             Get-ChildItem -Path 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
@@ -112,14 +109,8 @@ function Get-InstalledProgram
         } |
         Where-Object {
             [Microsoft.Win32.RegistryKey] $key = $_
-
             $valueNames = $key.GetValueNames()
-            if( $valueNames -notcontains 'DisplayName' )
-            {
-                Write-Debug ('Skipping {0}: DisplayName not found.' -f $key.Name)
-                return $false
-            }
-            return $true
+            return ($valueNames -contains 'DisplayName')
         } |
         Where-Object { 
             [Microsoft.Win32.RegistryKey] $key = $_
@@ -131,30 +122,18 @@ function Get-InstalledProgram
         } | 
         Where-Object {
             [Microsoft.Win32.RegistryKey] $key = $_
-
             $valueNames = $key.GetValueNames()
-
-            if( $valueNames -contains 'ParentKeyName' )
-            {
-                $displayName = $key.GetValue('DisplayName')
-                Write-Debug ('Skipping {0} ({1}): found ParentKeyName property.' -f $displayName,$key.Name)
-                return $false
-            }
-            return $true
+            return ($valueNames -notcontains 'ParentKeyName')
         } |
         Where-Object {
             [Microsoft.Win32.RegistryKey] $key = $_
             $valueNames = $key.GetValueNames()
-            if( $valueNames -contains 'SystemComponent' -and $key.GetValue('SystemComponent') -eq 1 )
-            {
-                $displayName = $key.GetValue('DisplayName')
-                Write-Debug ('Skipping {0} ({1}): SystemComponent property is 1.' -f $displayName,$key.Name)
-                return $false
-            }
-            return $true
+            return ($valueNames -notcontains 'SystemComponent' -or $key.GetValue('SystemComponent') -ne 1 )
         } |
-        ForEach-Object { 
+        ForEach-Object {
             $key = [Microsoft.Win32.RegistryKey] $_
+
+            $numFound += 1
 
             $info = [pscustomobject]@{
                 Comments = Get-KeyStringValue -Key $key -ValueName 'Comments';
@@ -190,7 +169,7 @@ function Get-InstalledProgram
             [DateTime] $installDate = [DateTime]::MinValue
             if( [DateTime]::TryParse($installDateValue, [ref]$installDate) -or
                 [DateTime]::TryParseExact($installDateValue, 'yyyyMMdd', [cultureinfo]::CurrentCulture,
-                                              [Globalization.DateTimeStyles]::None, [ref]$installDate)
+                                            [Globalization.DateTimeStyles]::None, [ref]$installDate)
             )
             {
                 $info.InstallDate = $installDate
@@ -252,14 +231,11 @@ function Get-InstalledProgram
 
             $info.pstypenames.Insert(0, 'Carbon.Windows.Installer.ProgramInfo')
             $info | Write-Output
-        } |
-        Tee-Object -Variable 'foundPrograms'
+        }
 
-    if( $Name -and -not [wildcardpattern]::ContainsWildcardCharacters($Name) -and -not $foundPrograms )
+    if( $Name -and -not [wildcardpattern]::ContainsWildcardCharacters($Name) -and $numFound -eq 0 )
     {
         $msg = "Program ""$($Name)"" is not installed."
         Write-Error -Message $msg -ErrorAction $ErrorActionPreference
     }
-
-    Write-Debug "$($msgPrefix)-"
 }

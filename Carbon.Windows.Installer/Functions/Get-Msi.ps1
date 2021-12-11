@@ -110,7 +110,7 @@ function Get-Msi
             param(
                 [String] $Message
             )
-    
+            
             $msg = "[$([Math]::Round($timer.Elapsed.TotalMinutes))m $($timer.Elapsed.Seconds.toString('00'))s " +
                    "$($timer.Elapsed.Milliseconds.ToString('000'))ms]  " +
                    "[$([Math]::Round($lastWrite.Elapsed.TotalSeconds).ToString('00'))s " +
@@ -251,23 +251,60 @@ function Get-Msi
             }
             finally
             {
+                $collect = $false
                 if( $database )
                 {
                     [void][Runtime.InteropServices.Marshal]::ReleaseCOMObject($database)
+                    $collect = $true
+                }
+
+                if( $installer )
+                {
+                    [void][Runtime.InteropServices.Marshal]::ReleaseCOMObject($installer)
+                    $collect = $true
+                }
+
+                if( $collect )
+                {
+                    # ReleaseCOMObject still leaves the MSI file open. The only way to close the file handle is to run
+                    # garbage collection, and even then it takes a few seconds. :(
+                    Debug "[GC]::Collect()  START"
+                    [GC]::Collect()
+                    Debug "[GC]::Collect()  END"
                 }
             }
 
+            # It can take some milliseconds for the COM file handles to get closed. In my testing, about 10 to 30
+            # milliseconds. I give it 100ms just to be safe. But don't keep trying because something else might 
+            # legitimately have the file open. 100ms is the longest something can take without a human wondering what's
+            # taking so long.
+            $timer = [Diagnostics.Stopwatch]::StartNew()
+            $numAttempts = 1
+            $maxTime = [TimeSpan]::New(0, 0, 0, 0, 100)
+            while( $timer.Elapsed -lt $maxTime )
+            {
+                $numErrors = $Global:Error.Count
+                try
+                {
+                    # Wait until the file handle held by the WindowsInstaller COM objects is closed.
+                    [IO.File]::Open($msiPath, 'Open', 'Read', 'None').Close()
+                    break
+                }
+                catch
+                {
+                    ++$numAttempts
+                    for( $numErrors; $numErrors -lt $Global:Error.Count; ++$numErrors )
+                    {
+                        $Global:Error.RemoveAt(0)
+                    }
+                    Start-Sleep -Milliseconds 1
+                }
+            }
+            $timer.Stop()
+            $msg = "Took $($numAttempts) attempt(s) in " +
+                   "$($timer.Elapsed.TotalSeconds.ToString('0.000'))s for handle to ""$($msiPath)"" to close."
+            Debug $msg
             $info | Write-Output
         }
-    }
-
-    end
-    {
-        if( $PSCmdlet.ParameterSetName -eq 'ByUrl' )
-        {
-            return
-        }
-        
-        [GC]::Collect()
     }
 }
