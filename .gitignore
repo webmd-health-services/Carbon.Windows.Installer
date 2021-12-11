@@ -1,3 +1,13 @@
 /.output
 /PSModules
 /.vscode
+/Tests/MSI/
+
+.vs
+Source/**/bin/**
+obj
+
+/Carbon.Windows.Installer/README.md
+/Carbon.Windows.Installer/CHANGELOG.md
+/Carbon.Windows.Installer/LICENSE
+/Carbon.Windows.Installer/NOTICE

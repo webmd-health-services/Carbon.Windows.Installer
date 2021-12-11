@@ -28,6 +28,9 @@ $Global:WhatIfPreference = $WhatIfPreference = $false
 
 try
 {
+    $prefixes = @{
+        'Carbon.Windows.Installer' = 'TC';
+    }
     $modules = [ordered]@{
         'Carbon.Windows.Installer' = '..\Carbon.Windows.Installer';
         'Carbon.Windows.InstallerTestHelper' = 'Carbon.Windows.InstallerTestHelper';
@@ -49,7 +52,12 @@ try
         }
 
         Write-Verbose -Message ('Importing module "{0}" from "{1}".' -f $moduleName,$modulePath)
-        Import-Module -Name $modulePath
+        $prefixParam = @{}
+        if( $prefixes.ContainsKey($moduleName) )
+        {
+            $prefixParam['Prefix'] = $prefixes[$moduleName]
+        }
+        Import-Module -Name $modulePath @prefixParam
     }
 }
 finally
