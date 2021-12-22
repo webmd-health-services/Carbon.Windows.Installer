@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+   
+       http://www.apache.org/licenses/LICENSE-2.0
+   
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>Carbon.Windows.Installer.ProgramInfo</Name>
+            <ViewSelectedBy>
+                <TypeName>Carbon.Windows.Installer.ProgramInfo</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Label>DisplayName</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>Publisher</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>InstallDate</Label>
+                        <Width>11</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>Size</Label>
+                        <Alignment>Right</Alignment>
+                        <Width>10</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>DisplayVersion</Label>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>DisplayName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Publisher</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    if( $_.InstallDate -eq [DateTime]::MinValue )
+                                    {
+                                        return ""
+                                    }
+                                    "{0:d}" -f $_.InstallDate
+                                </ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    if( $_.EstimatedSize -eq 0 )
+                                    {
+                                        return ""
+                                    }
+
+                                    $bytes = $_.EstimatedSize * 1kb
+                                    if( $bytes -lt 1mb )
+                                    {
+                                        '{0} KB' -f ($bytes/1kb)
+                                    }
+                                    elseif( $bytes -lt 1gb )
+                                    {
+                                        '{0:0.00} MB' -f ($bytes/1mb)
+                                    }
+                                    else
+                                    {
+                                        '{0:0.00} GB' -f ($bytes/1gb)
+                                    }
+                                </ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>DisplayVersion</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>
