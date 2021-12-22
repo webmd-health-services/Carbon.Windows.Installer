@@ -101,44 +101,49 @@ function Get-InstalledProgram
         $null = New-PSDrive -Name 'HKU' -PSProvider Registry -Root 'HKEY_USERS' -WhatIf:$false
     }
 
-    $numFound = 0
-    & {
-            Get-ChildItem -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
-            Get-ChildItem -Path 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
-            Get-ChildItem -Path 'hku:\*\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction Ignore
-        } |
-        Where-Object {
-            [Microsoft.Win32.RegistryKey] $key = $_
-            $valueNames = $key.GetValueNames()
-            return ($valueNames -contains 'DisplayName')
-        } |
-        Where-Object { 
-            [Microsoft.Win32.RegistryKey] $key = $_
-            if( $Name ) 
-            { 
-                return $key.GetValue('DisplayName') -like $Name
-            } 
-            return $true
-        } | 
-        Where-Object {
-            [Microsoft.Win32.RegistryKey] $key = $_
-            $valueNames = $key.GetValueNames()
-            return ($valueNames -notcontains 'ParentKeyName')
-        } |
-        Where-Object {
-            [Microsoft.Win32.RegistryKey] $key = $_
-            $valueNames = $key.GetValueNames()
-            return ($valueNames -notcontains 'SystemComponent' -or $key.GetValue('SystemComponent') -ne 1 )
-        } |
-        ForEach-Object {
-            $key = [Microsoft.Win32.RegistryKey] $_
+    $keys = & {
+        Get-ChildItem -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+        Get-ChildItem -Path 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+        Get-ChildItem -Path 'hku:\*\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction Ignore
+    }
 
-            $numFound += 1
+    $programs = $null
+    & {
+        foreach( $key in $keys )
+        {
+            $valueNames = [Collections.Generic.Hashset[String]]::New($key.GetValueNames())
+
+            if( -not $valueNames.Contains('DisplayName') )
+            {
+                continue
+            }
+
+            $displayName = $key.GetValue('DisplayName')
+            if( $Name -and $displayName -notlike $Name )
+            {
+                continue
+            }
+
+            if( $valueNames.Contains('ParentKeyName') )
+            {
+                continue
+            }
+
+            if( $valueNames.Contains('SystemComponent') )
+            {
+                continue
+            }
+
+            $systemComponent = $key.GetValue('SystemComponent')
+            if( $systemComponent -eq 1 )
+            {
+                continue
+            }
 
             $info = [pscustomobject]@{
                 Comments = Get-KeyStringValue -Key $key -ValueName 'Comments';
                 Contact = Get-KeyStringValue -Key $key -ValueName 'Contact';
-                DisplayName = Get-KeyStringValue -Key $key -ValueName 'DisplayName';
+                DisplayName = $displayName;
                 DisplayVersion = Get-KeyStringValue -Key $key -ValueName 'DisplayVersion';
                 EstimatedSize = Get-KeyIntValue -Key $key -ValueName 'EstimatedSize';
                 HelpLink = Get-KeyStringValue -Key $key -ValueName 'HelpLink';
@@ -231,9 +236,12 @@ function Get-InstalledProgram
 
             $info.pstypenames.Insert(0, 'Carbon.Windows.Installer.ProgramInfo')
             $info | Write-Output
-        }
+        } 
+    } |
+    Tee-Object -Variable 'programs' |
+    Sort-Object -Property 'DisplayName'
 
-    if( $Name -and -not [wildcardpattern]::ContainsWildcardCharacters($Name) -and $numFound -eq 0 )
+    if( $Name -and -not [wildcardpattern]::ContainsWildcardCharacters($Name) -and -not $programs )
     {
         $msg = "Program ""$($Name)"" is not installed."
         Write-Error -Message $msg -ErrorAction $ErrorActionPreference
