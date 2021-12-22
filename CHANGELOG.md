@@ -2,7 +2,7 @@
 # 1.0.0
 
 The `Carbon.Windows.Installer` module was created from functions in the `Carbon` module. These release notes assume
-you're migrating from `Carbon`. If you're not migrating, you can ignore these release notes.
+you're migrating from [Carbon](http://get-carbon.org). If you're not migrating, you can ignore these release notes.
 
 ## Migration Instructions
 
@@ -28,8 +28,8 @@ If migrating from Carbon, you'll need to make the following changes:
 
 * Rename usages of `Get-CProgramInstallInfo` to `Get-CInstalledProgram`. We renamed `Get-CProgramInstallInfo` to 
   `Get-CInstalledProgram`. The `C` prefix is now required.
-* Remove usages of the `[Carbon.Computer.ProgramInstallInfo]`. `Get-CInstalledProgram` now returns `[PSObject]` objects
-  with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
+* Remove usages of the `[Carbon.Computer.ProgramInstallInfo]` type. `Get-CInstalledProgram` now returns `[PSObject]`
+objects with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
 * Add `-ErrorAction Ignore` or `-ErrorAction SilentlyContinue` to usages of `Get-CInstalledProgram` that handle if no
 object is returned. `Get-CInstalledProgram` now writes an error if a program isn't installed.
 
@@ -63,7 +63,7 @@ product code to the `ProductCode` parameter. The MSI file will only be downloade
 ### Changed
 
 * Minimum system requirements are now Windows PowerShell 5.1 on .NET 4.5.2+ or PowerShell 6.2+ on Windows. The
-`Get-CMsi` and `Install-CMsi` functions don't work in PowerShll 6.2.
+`Get-CMsi` and `Install-CMsi` functions don't work in PowerShell 6.2.
 * `Get-CMsi`: The `Properties` property on returned objects renamed to `Property`.
 * `Get-CMsi`: The `Properties` property on returned objects is no longer a hashtable but an array of
 `[Carbon.Windows.Installer.Records.Property]` objects. To find the value of a property, use the
