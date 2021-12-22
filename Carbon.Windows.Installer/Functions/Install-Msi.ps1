@@ -90,7 +90,7 @@ function Install-Msi
         [ValidateSet('Quiet', 'Passive', 'Full')]
         [String] $DisplayMode = 'Quiet',
 
-        # The logging options to use. The default is to log all information (`*`), log verbose output (`v`), log exta
+        # The logging options to use. The default is to log all information (`*`), log verbose output (`v`), log extra
         # debugging information (`x`), and to flush each line to the log (`!`).
         [String] $LogOption = '!*vx',
 

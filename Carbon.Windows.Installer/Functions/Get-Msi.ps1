@@ -12,7 +12,7 @@ function Get-Msi
     
     * `ProductName`, the value of the MSI's `ProductName` property.
     * `ProductCode`, the value of the MSI's `ProductCode` property as a `Guid`.
-    * `ProduceLanguage`, the value of the MSI's `ProduceLanguage` property, as an integer.
+    * `ProductLanguage`, the value of the MSI's `ProduceLanguage` property, as an integer.
     * `Manufacturer`, the value of the MSI's `Manufacturer` property.
     * `ProductVersion`, the value of the MSI's `ProductVersion` property, as a `Version`
     * `Path`, the path of the MSI file.
@@ -190,7 +190,7 @@ function Get-Msi
 
             $installer = New-Object -ComObject 'WindowsInstaller.Installer'
 
-            $database = $null;
+            $database = $null
             Debug "[$($PSCmdlet.MyInvocation.MyCommand.Name)]  Opening ""$($msiPath)""."
             try
             {
