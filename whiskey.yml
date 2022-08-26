@@ -15,9 +15,8 @@ Build:
     Path: appveyor
     Argument: [ UpdateBuild, -Version, "$(WHISKEY_SEMVER2)+$(WHISKEY_BUILD_NUMBER)" ]
 
-- GetPowerShellModule:
-    Name: VSSetup
-    Version: 2.*
+- PowerShell:
+    ScriptBlock: prism install | Format-Table -Auto
 
 - PowerShell:
     OnlyDuring: Build

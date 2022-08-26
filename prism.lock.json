@@ -1,0 +1,9 @@
+{
+    "PSModules":  [
+                      {
+                          "name":  "VSSetup",
+                          "version":  "2.2.16",
+                          "repositorySourceLocation":  "https://www.powershellgallery.com/api/v2"
+                      }
+                  ]
+}

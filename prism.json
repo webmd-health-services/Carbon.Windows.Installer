@@ -1,0 +1,8 @@
+{
+    "PSModules": [
+        {
+            "Name": "VSSetup",
+            "Version": "2.*"
+        }
+    ]
+}
