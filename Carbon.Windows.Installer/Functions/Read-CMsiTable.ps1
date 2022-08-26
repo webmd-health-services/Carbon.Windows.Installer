@@ -1,5 +1,5 @@
 
-function Read-MsiTable
+function Read-CMsiTable
 {
     [CmdletBinding()]
     param(

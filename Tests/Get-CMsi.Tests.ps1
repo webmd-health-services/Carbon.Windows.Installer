@@ -106,7 +106,7 @@ BeforeAll {
                     'Property'
                     'Feature'
                     $WithTableName | Write-Output
-                } | 
+                } |
                 Select-Object -Unique
             foreach( $tableName in $msi.TableNames )
             {
@@ -141,7 +141,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-Msi' {
+Describe 'Get-CMsi' {
     BeforeEach {
         $Global:Error.Clear()
 
@@ -163,7 +163,7 @@ Describe 'Get-Msi' {
     It 'should accept pipeline input' {
         $msi = Get-ChildItem -Path $script:msiRootPath -Filter '*.msi' | Get-TCMsi
         $msi | Should -Not -BeNullOrEmpty
-        $msi | ForEach-Object { 
+        $msi | ForEach-Object {
             $script:result = $_
             ThenMsiObjectReturned -WithMember @{
                 'Manufacturer' = 'Carbon';

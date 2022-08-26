@@ -1,5 +1,5 @@
 
-function Install-Msi
+function Install-CMsi
 {
     <#
     .SYNOPSIS
@@ -35,7 +35,7 @@ function Install-Msi
 
     .EXAMPLE
     Install-CMsi -Path '.\Path\to\installer.msi'
-    
+
     Demonstrates how to install a program with its MSI.
 
     .EXAMPLE
@@ -74,13 +74,13 @@ function Install-Msi
         # used. Use the `Get-CMsi` function to get the product code of an MSI.
         [Parameter(Mandatory, ParameterSetName='ByUrl')]
         [String] $ProductName,
-        
+
         # The product code of the downloaded MSI. Used to determine if the program is installed or not. Used with the
         # `Url` parameter. The installer is only downloaded if the product is not installed or the `-Force` switch is
         # used. Use the `Get-CMsi` function to get the product code from an MSI.
         [Parameter(Mandatory, ParameterSetName='ByUrl')]
         [Guid] $ProductCode,
-        
+
         # Install the MSI even if it has already been installed. Will cause a repair/reinstall to run.
         [Switch] $Force,
 
@@ -122,7 +122,7 @@ function Install-Msi
             )
 
             $DebugPreference = 'SilentlyContinue'
-            $installInfo = Get-InstalledProgram -Name $Name -ErrorAction Ignore
+            $installInfo = Get-CInstalledProgram -Name $Name -ErrorAction Ignore
             if( -not $installInfo )
             {
                 return $false
@@ -245,10 +245,10 @@ function Install-Msi
 
         $msgPrefix = "[$($MyInvocation.MyCommand.Name)]  "
         Write-Debug "$($msgPrefix)+"
-        
+
         if( $Path )
         {
-            Get-Msi -Path $Path |
+            Get-CMsi -Path $Path |
                 Where-Object {
                     $msiInfo = $_
 
@@ -279,7 +279,7 @@ function Install-Msi
             $Force = $false
         }
 
-        $msi = Get-Msi -Url $Url
+        $msi = Get-CMsi -Url $Url
         if( -not $msi )
         {
             return

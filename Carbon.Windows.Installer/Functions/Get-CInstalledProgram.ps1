@@ -1,10 +1,10 @@
 
-function Get-InstalledProgram
+function Get-CInstalledProgram
 {
     <#
     .SYNOPSIS
     Gets information about the programs installed on the computer.
-    
+
     .DESCRIPTION
     The `Get-CInstalledProgram` function is the PowerShell equivalent of the Programs and Features/Apps and Features
     settings UI. It inspects the registry to determine what programs are installed. When running as an administrator, it
@@ -30,7 +30,7 @@ function Get-InstalledProgram
       property will be `[String]::Empty`.
     * The `InstallDate` property is set to `[DateTime]::MinValue` if the install date can't be determined.
     * The `Version` property is `$null` if the version can't be parsed.
-    
+
     .EXAMPLE
     Get-CInstalledProgram | Sort-Object 'DisplayName'
 
@@ -169,7 +169,7 @@ function Get-InstalledProgram
                 WindowsInstaller = $false;
             }
             $info | Add-Member -Name 'Name' -MemberType AliasProperty -Value 'DisplayName'
-            
+
             $installDateValue = Get-KeyStringValue -Key $key -ValueName 'InstallDate'
             [DateTime] $installDate = [DateTime]::MinValue
             if( [DateTime]::TryParse($installDateValue, [ref]$installDate) -or
@@ -236,7 +236,7 @@ function Get-InstalledProgram
 
             $info.pstypenames.Insert(0, 'Carbon.Windows.Installer.ProgramInfo')
             $info | Write-Output
-        } 
+        }
     } |
     Tee-Object -Variable 'programs' |
     Sort-Object -Property 'DisplayName'

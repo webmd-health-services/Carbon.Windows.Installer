@@ -18,7 +18,7 @@
     RootModule = 'Carbon.Windows.Installer.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '2.0.0'
 
     # ID used to uniquely identify this module
     GUID = '57af6e60-d9f5-4523-8aa3-3e3480fd91cc'
@@ -101,9 +101,9 @@ System Requirements:
 
     # Functions to export from this module. Only list public function here.
     FunctionsToExport = @(
-        'Get-Msi',
-        'Get-InstalledProgram',
-        'Install-Msi'
+        'Get-CMsi',
+        'Get-CInstalledProgram',
+        'Install-CMsi'
     )
 
     # Cmdlets to export from this module. By default, you get a script module, so there are no cmdlets.
@@ -128,7 +128,7 @@ System Requirements:
     # HelpInfoURI = ''
 
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-    DefaultCommandPrefix = 'C'
+    # DefaultCommandPrefix = ''
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
     PrivateData = @{

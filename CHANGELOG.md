@@ -1,4 +1,15 @@
 
+# 2.0.0
+
+## Upgrade Instructions
+
+The `DefaultCommandPrefix` property doesn't work as we expected, so we've removed it and added an explicit `C` prefix
+on each command. Add a `C` prefix to each function name on usages of `Import-Module` cmdlet's `Function` parameter.
+
+## Changed
+
+The module now exposes its commands with an explict `C` prefix instead of using the `DefaultCommandPrefix` parameter.
+
 # 1.0.0
 
 The `Carbon.Windows.Installer` module was created from functions in the `Carbon` module. These release notes assume
@@ -26,7 +37,7 @@ If migrating from Carbon, you'll need to make the following changes:
 
 ### Get-CProgramInstallInfo
 
-* Rename usages of `Get-CProgramInstallInfo` to `Get-CInstalledProgram`. We renamed `Get-CProgramInstallInfo` to 
+* Rename usages of `Get-CProgramInstallInfo` to `Get-CInstalledProgram`. We renamed `Get-CProgramInstallInfo` to
   `Get-CInstalledProgram`. The `C` prefix is now required.
 * Remove usages of the `[Carbon.Computer.ProgramInstallInfo]` type. `Get-CInstalledProgram` now returns `[PSObject]`
 objects with a pstypename of `[Carbon.Windows.Installer.ProgramInfo]`.
@@ -55,7 +66,7 @@ directory or to a specific file.
 * When an installer fails, `Install-CMsi` leaves a debug log of the installation in the user's temp directory. The
 file's name begins with the installer's file name followed by a random file name and has a `.log` extension.
 * `Install-CMsi` can now download an MSI file to install. Pass the URL to the installer to the `Url` parameter, the
-file's SHA256 checksum to the `Checksum` parameter, its product name to the `ProductName` parameter, and its 
+file's SHA256 checksum to the `Checksum` parameter, its product name to the `ProductName` parameter, and its
 product code to the `ProductCode` parameter. The MSI file will only be downloaded if it isn't installed. You can get the MSI's checksum with PowerShell's `Get-FileHash` cmdlet. You can get the MSI's product name and code with this module's `Get-CMsi` function.
 * Added `ArgumentList` parameter to `Install-CMsi` to pass additional arguments to `msiexec.exe` when installing an MSI.
 * Added `DisplayOption`, `LogOption`, and `LogPath` parameters to allow users to control the display and logging options passed to `msiexec.exe`.
