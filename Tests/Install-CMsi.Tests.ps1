@@ -52,7 +52,7 @@ BeforeAll {
             [Object] $Msi = $script:testInstaller
         )
 
-        $installerRegPath = 
+        $installerRegPath =
             "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{$($Msi.ProductCode)}"
         $installed = (Test-Path -Path $installerRegPath)
         $installedMsg = 'not '
@@ -221,7 +221,7 @@ BeforeAll {
     }
 }
 
-Describe 'Install-Msi' {
+Describe 'Install-CMsi' {
     BeforeEach {
         Uninstall-CarbonTestInstaller
 

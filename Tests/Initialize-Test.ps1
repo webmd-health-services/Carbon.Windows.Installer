@@ -13,7 +13,7 @@ Execute this script as the first thing in each of your test fixtures:
 
     #Requires -Version 5.1
     Set-StrictMode -Version 'Latest'
-    
+
     & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Test.ps1' -Resolve)
 #>
 [CmdletBinding()]
@@ -29,7 +29,7 @@ $Global:WhatIfPreference = $WhatIfPreference = $false
 try
 {
     $prefixes = @{
-        'Carbon.Windows.Installer' = 'TC';
+        'Carbon.Windows.Installer' = 'T';
     }
     $modules = [ordered]@{
         'Carbon.Windows.Installer' = '..\Carbon.Windows.Installer';

@@ -1,5 +1,5 @@
 
-function Get-Msi
+function Get-CMsi
 {
     <#
     .SYNOPSIS
@@ -9,7 +9,7 @@ function Get-Msi
     The `Get-CMsi` function uses the `WindowsInstaller.Installer` COM API to read properties from an MSI file. Pass the
     path to the MSI file or files to the `Path`, or pipe file objects to `Get-CMsi`. An object is returned that exposes
     the internal metadata of the MSI file:
-    
+
     * `ProductName`, the value of the MSI's `ProductName` property.
     * `ProductCode`, the value of the MSI's `ProductCode` property as a `Guid`.
     * `ProductLanguage`, the value of the MSI's `ProduceLanguage` property, as an integer.
@@ -86,7 +86,7 @@ function Get-Msi
         [Uri] $Url,
 
         # The path where the downloaded MSI file should be saved. By default, the file is downloaded to the current
-        # user's temp directory. If `OutputPath` is a directory, the file will be saved to that directory with the 
+        # user's temp directory. If `OutputPath` is a directory, the file will be saved to that directory with the
         # same name as file's name in the `Url`. Otherwise, `OutputPath` is considered to be the path to the file where
         # the downloaded MSI should be saved. Any existing file will be overwritten.
         [Parameter(ParameterSetName='ByUrl')]
@@ -110,7 +110,7 @@ function Get-Msi
             param(
                 [String] $Message
             )
-            
+
             $msg = "[$([Math]::Round($timer.Elapsed.TotalMinutes))m $($timer.Elapsed.Seconds.toString('00'))s " +
                    "$($timer.Elapsed.Milliseconds.ToString('000'))ms]  " +
                    "[$([Math]::Round($lastWrite.Elapsed.TotalSeconds).ToString('00'))s " +
@@ -135,7 +135,7 @@ function Get-Msi
             }
             $ProgressPreference = [Management.Automation.ActionPreference]::SilentlyContinue
             Invoke-WebRequest -Uri $Url -OutFile $OutputPath | Out-Null
-            Get-Item -LiteralPath $OutputPath | Get-Msi -IncludeTable $IncludeTable
+            Get-Item -LiteralPath $OutputPath | Get-CMsi -IncludeTable $IncludeTable
             return
         }
 
@@ -212,7 +212,7 @@ function Get-Msi
             try
             {
                 Debug '    _Tables'
-                $tables = Read-MsiTable -Database $database -Name '_Tables' -MsiPath $msiPath
+                $tables = Read-CMsiTable -Database $database -Name '_Tables' -MsiPath $msiPath
                 $info.TableNames = $tables | Select-Object -ExpandProperty 'Name'
 
                 foreach( $tableName in $info.TableNames )
@@ -225,7 +225,7 @@ function Get-Msi
                     }
 
                     Debug "    $($tableName)"
-                    $info.Tables.$tableName = Read-MsiTable -Database $database -Name $tableName -MsiPath $msiPath
+                    $info.Tables.$tableName = Read-CMsiTable -Database $database -Name $tableName -MsiPath $msiPath
                 }
 
                 [Guid] $productCode = [Guid]::Empty
@@ -275,7 +275,7 @@ function Get-Msi
             }
 
             # It can take some milliseconds for the COM file handles to get closed. In my testing, about 10 to 30
-            # milliseconds. I give it 100ms just to be safe. But don't keep trying because something else might 
+            # milliseconds. I give it 100ms just to be safe. But don't keep trying because something else might
             # legitimately have the file open. 100ms is the longest something can take without a human wondering what's
             # taking so long.
             $timer = [Diagnostics.Stopwatch]::StartNew()

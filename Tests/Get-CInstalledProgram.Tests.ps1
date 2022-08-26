@@ -1,9 +1,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,7 @@ Set-StrictMode -Version 'Latest'
 
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Test.ps1' -Resolve)
 
-Describe 'Get-InstalledProgram' {
+Describe 'Get-CInstalledProgram' {
     BeforeEach {
         $Global:Error.Clear()
     }
@@ -32,7 +32,7 @@ Describe 'Get-InstalledProgram' {
             Write-Verbose -Message $program.DisplayName
             $program | Should -Not -BeNullOrEmpty
             [Microsoft.Win32.RegistryKey]$key = $program.Key
-            
+
             foreach( $property in (Get-Member -InputObject $program -MemberType Property) )
             {
                 $propertyName = $property.Name
@@ -41,15 +41,15 @@ Describe 'Get-InstalledProgram' {
                 {
                     Write-Verbose 'BREAK'
                 }
-    
+
                 if( $propertyName -eq 'Key' )
                 {
                     continue
                 }
-    
+
                 $keyValue = $key.GetValue( $propertyName )
                 $propertyValue = $program.$propertyName
-    
+
                 if( $propertyName -eq 'ProductCode' )
                 {
                     $propertyValue = Split-Path -Leaf -Path $key.Name
@@ -75,7 +75,7 @@ Describe 'Get-InstalledProgram' {
                         $keyValue = $propertyValue
                     }
                 }
-    
+
                 $typeName = $program.GetType().GetProperty($propertyName).PropertyType.Name
                 if( $keyValue -eq $null )
                 {
@@ -109,7 +109,7 @@ Describe 'Get-InstalledProgram' {
                     if( $typeName -eq 'DateTime' )
                     {
                         [DateTime]$dateTime = [DateTime]::MinValue
-    
+
                         if( -not ([DateTime]::TryParse($keyValue,[ref]$dateTime)) )
                         {
                             [DateTime]::TryParseExact( $keyValue, 'yyyyMMdd', [Globalization.CultureInfo]::CurrentCulture, [Globalization.DateTimeStyles]::None, [ref]$dateTime)
@@ -147,7 +147,7 @@ Describe 'Get-InstalledProgram' {
                         }
                     }
                 }
-    
+
                 if( $keyValue -eq $null )
                 {
                     $propertyValue | Should -BeNullOrEmpty
@@ -183,7 +183,7 @@ Describe 'Get-InstalledProgram' {
         $wildcard = $p.DisplayName.Substring(0,$p.DisplayName.Length - 1)
         $wildcard = '{0}*' -f $wildcard
         $p2 = Get-TCInstalledProgram $wildcard
-    
+
             $p2 | Should -Not -BeNullOrEmpty
         Compare-Object -ReferenceObject $p -DifferenceObject $p2 | Should -BeNullOrEmpty
     }
@@ -194,7 +194,7 @@ Describe 'Get-InstalledProgram' {
     }
 
     It 'should ignore invalid integer version' {
-        
+
         $program = Get-TCInstalledProgram | Select-Object -First 1
 
         $regKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Carbon.Windows.Installer'
@@ -210,7 +210,7 @@ Describe 'Get-InstalledProgram' {
             New-ItemProperty -Path $regKeyPath -Name 'Version' -Value 0xff000000 -PropertyType 'DWord'
 
             $program = Get-TCInstalledProgram -Name $programName
-        
+
             $program | Should -Not -BeNullOrEmpty
             $program.Version | Should -BeNullOrEmpty
         }
